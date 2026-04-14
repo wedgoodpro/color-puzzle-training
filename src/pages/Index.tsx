@@ -71,8 +71,12 @@ const getActiveColorIds = (score: number): number[] => {
   return ids;
 };
 
-const randColorIdFromActive = (activeIds: number[]) =>
-  activeIds[Math.floor(Math.random() * activeIds.length)];
+const randColorIdFromActive = (activeIds: number[], exclude?: number) => {
+  const pool = activeIds.length > 1 && exclude !== undefined
+    ? activeIds.filter((id) => id !== exclude)
+    : activeIds;
+  return pool[Math.floor(Math.random() * pool.length)];
+};
 
 type Cell = { colorId: number } | null;
 type Grid = Cell[][];
@@ -258,6 +262,7 @@ export default function Index() {
   const [litColorIds, setLitColorIds] = useState<Set<number>>(new Set());
   const [newColorsNotice, setNewColorsNotice] = useState<string | null>(null);
   const prevActiveLenRef = useRef(getActiveColorIds(0).length);
+  const lastTwoColorsRef = useRef<number[]>([]); // последние 2 выпавших цвета
 
   const animFrameRef = useRef<number | null>(null);
   const flyStartRef = useRef<number>(0);
@@ -413,7 +418,12 @@ export default function Index() {
             checkAndPop(next, targetRow, col, colorId);
             return next;
           });
-          setCurrentColorId(randColorIdFromActive(activeColorIds));
+          // Не допускаем 3 подряд одинаковых
+          const last2 = lastTwoColorsRef.current;
+          const excludeId = last2.length === 2 && last2[0] === last2[1] ? last2[0] : undefined;
+          const nextId = randColorIdFromActive(activeColorIds, excludeId);
+          lastTwoColorsRef.current = [last2[last2.length - 1] ?? colorId, nextId].slice(-2);
+          setCurrentColorId(nextId);
         }
       };
 
@@ -443,7 +453,7 @@ export default function Index() {
       if (added) {
         const names = added.ids.map((id) => ITTEN_COLORS[id].name).join(" и ");
         setNewColorsNotice(`+2 новых цвета: ${names}!`);
-        setTimeout(() => setNewColorsNotice(null), 2500);
+        setTimeout(() => setNewColorsNotice(null), 5000);
       }
     }
     prevActiveLenRef.current = newLen;
@@ -465,6 +475,7 @@ export default function Index() {
     setGameOver(false);
     setLastPoints(null);
     prevActiveLenRef.current = getActiveColorIds(0).length;
+    lastTwoColorsRef.current = [];
   };
 
   const getFlyingY = (ft: FlyingTile) => {
