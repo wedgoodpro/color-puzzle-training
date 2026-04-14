@@ -411,9 +411,9 @@ export default function Index() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-mono tracking-widest uppercase"
-                style={{ fontSize: 11, color: "#555", letterSpacing: "0.15em", textDecoration: "none" }}
+                style={{ fontSize: 15, color: "#777", letterSpacing: "0.1em", textDecoration: "none" }}
               >
-                уроки фотографии
+                хочешь научиться фотографировать?
               </a>
               <DownloadHtmlButton />
             </div>
