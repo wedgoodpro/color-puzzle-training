@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import JSZip from "jszip";
 import ColorWheel from "@/game/ColorWheel";
 import GameBoard from "@/game/GameBoard";
 import { GameOverModal } from "@/game/GameOverlay";
@@ -18,26 +19,22 @@ function DownloadHtmlButton() {
     setLoading(true);
     try {
       const origin = window.location.origin;
+      const zip = new JSZip();
+      const folder = zip.folder('colorist-game')!;
 
-      // Загружаем исходный HTML билда с сервера
+      // Загружаем index.html
       const rawHtml = await fetch(origin + '/').then(r => r.text());
-
-      // Парсим через DOM чтобы удобно манипулировать тегами
       const doc = document.implementation.createHTMLDocument('');
       doc.documentElement.innerHTML = rawHtml;
 
-      // Убираем платформенные скрипты (cdn.poehali.dev)
+      // Убираем платформенные скрипты и аналитику
       doc.querySelectorAll('script[src]').forEach(el => {
         const src = el.getAttribute('src') || '';
         if (src.includes('poehali.dev') || src.includes('yandex')) el.remove();
       });
-
-      // Убираем инлайн-скрипты аналитики
       doc.querySelectorAll('script:not([src])').forEach(el => {
         if (el.textContent?.includes('ym(') || el.textContent?.includes('Metrika')) el.remove();
       });
-
-      // Убираем noscript, modulepreload, prefetch, Google Fonts
       doc.querySelectorAll('noscript').forEach(el => el.remove());
       doc.querySelectorAll('link').forEach(el => {
         const rel = el.getAttribute('rel') || '';
@@ -46,38 +43,38 @@ function DownloadHtmlButton() {
         if (rel === 'modulepreload' || rel === 'prefetch') { el.remove(); return; }
       });
 
-      // Инлайним CSS
-      for (const el of [...doc.querySelectorAll('link[rel="stylesheet"]')]) {
-        const href = el.getAttribute('href') || '';
-        if (href.startsWith('http') || href.startsWith('//')) continue;
-        const content = await fetch(origin + href).then(r => r.text());
-        const style = doc.createElement('style');
-        style.textContent = content;
-        el.replaceWith(style);
-      }
-
-      // Инлайним JS — создаём тег БЕЗ type=module (это ключевое для file://)
-      for (const el of [...doc.querySelectorAll('script[src]')]) {
-        const src = el.getAttribute('src') || '';
-        if (src.startsWith('http') || src.startsWith('//')) continue;
-        const content = await fetch(origin + src).then(r => r.text());
-        const script = doc.createElement('script');
-        // НЕ ставим type="module" — ES-модули не работают по file://
-        // Вместо этого оборачиваем в IIFE чтобы не было конфликта переменных
-        script.textContent = `(function(){\n${content}\n})();`;
-        el.replaceWith(script);
-      }
-
-      // Системный шрифт вместо DM Mono
+      // Добавляем системный шрифт
       const fs = doc.createElement('style');
       fs.textContent = `.font-mono{font-family:ui-monospace,"Cascadia Code",Menlo,Consolas,monospace!important}`;
       doc.head.appendChild(fs);
 
-      const html = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
-      const blob = new Blob([html], { type: 'text/html' });
+      // Собираем список локальных ассетов из HTML
+      const assetPaths = new Set<string>();
+      doc.querySelectorAll('link[href]').forEach(el => {
+        const href = el.getAttribute('href') || '';
+        if (!href.startsWith('http') && !href.startsWith('//')) assetPaths.add(href);
+      });
+      doc.querySelectorAll('script[src]').forEach(el => {
+        const src = el.getAttribute('src') || '';
+        if (!src.startsWith('http') && !src.startsWith('//')) assetPaths.add(src);
+      });
+
+      // Скачиваем каждый ассет и кладём в ZIP
+      for (const path of assetPaths) {
+        const url = origin + (path.startsWith('/') ? path : '/' + path);
+        const data = await fetch(url).then(r => r.arrayBuffer());
+        // path вида /assets/index-xxx.js → assets/index-xxx.js
+        folder.file(path.replace(/^\//, ''), data);
+      }
+
+      // Сохраняем index.html
+      folder.file('index.html', '<!DOCTYPE html>\n' + doc.documentElement.outerHTML);
+
+      // Генерируем ZIP
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'colorist-game.html';
+      a.href = URL.createObjectURL(zipBlob);
+      a.download = 'colorist-game.zip';
       a.click();
       URL.revokeObjectURL(a.href);
     } finally {
@@ -93,7 +90,7 @@ function DownloadHtmlButton() {
       style={{ fontSize: 11, color: loading ? "#333" : "#555", letterSpacing: "0.15em", background: "none", border: "none", cursor: "pointer", padding: 0 }}
       title="Скачать игру как HTML-файл"
     >
-      {loading ? '...' : '↓ сохранить'}
+      {loading ? '...' : '↓ скачать игру'}
     </button>
   );
 }
