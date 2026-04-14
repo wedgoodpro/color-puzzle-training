@@ -202,6 +202,17 @@ export default function Index() {
         setGrid((prev) => {
           const next = prev.map((r) => [...r]) as Grid;
           toRemove.forEach(([r, c]) => { next[r][c] = null; });
+          // Гравитация: в каждом столбце сдвигаем ячейки вниз
+          for (let c = 0; c < COLS; c++) {
+            const filled: Cell[] = [];
+            for (let r = 0; r < ROWS; r++) {
+              if (next[r][c] !== null) filled.push(next[r][c]);
+            }
+            for (let r = 0; r < ROWS; r++) {
+              const fromBottom = ROWS - 1 - r;
+              next[fromBottom][c] = filled.length > 0 ? filled.pop()! : null;
+            }
+          }
           return next;
         });
         setPoppingCells(new Set());
