@@ -11,6 +11,58 @@ import {
   emptyGrid, loadScores, getBestScore, saveScore, easeOutCubic,
 } from "@/game/constants";
 
+function DownloadHtmlButton() {
+  const [loading, setLoading] = useState(false);
+
+  const download = async () => {
+    setLoading(true);
+    try {
+      const pageUrl = window.location.origin + window.location.pathname;
+      const htmlResp = await fetch(pageUrl);
+      let html = await htmlResp.text();
+
+      const scriptMatches = [...html.matchAll(/<script[^>]+src="([^"]+)"[^>]*><\/script>/g)];
+      for (const m of scriptMatches) {
+        const src = m[1];
+        if (src.startsWith('http')) continue;
+        const url = src.startsWith('/') ? window.location.origin + src : pageUrl + src;
+        const content = await fetch(url).then(r => r.text());
+        html = html.replace(m[0], `<script>${content}</script>`);
+      }
+
+      const linkMatches = [...html.matchAll(/<link[^>]+rel="stylesheet"[^>]*href="([^"]+)"[^>]*\/?>/g)];
+      for (const m of linkMatches) {
+        const href = m[1];
+        if (href.startsWith('http')) continue;
+        const url = href.startsWith('/') ? window.location.origin + href : pageUrl + href;
+        const content = await fetch(url).then(r => r.text());
+        html = html.replace(m[0], `<style>${content}</style>`);
+      }
+
+      const blob = new Blob([html], { type: 'text/html' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'colorist-game.html';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={download}
+      disabled={loading}
+      className="font-mono uppercase tracking-widest"
+      style={{ fontSize: 11, color: loading ? "#333" : "#555", letterSpacing: "0.15em", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+      title="Скачать игру как HTML-файл"
+    >
+      {loading ? '...' : '↓ сохранить'}
+    </button>
+  );
+}
+
 export default function Index() {
   const [grid, setGrid] = useState<Grid>(emptyGrid());
   const [score, setScore] = useState(0);
@@ -353,15 +405,18 @@ export default function Index() {
             />
 
             {/* Ссылка внизу */}
-            <a
-              href="https://vk.ru/fotoklubpro"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono tracking-widest uppercase"
-              style={{ fontSize: 11, color: "#555", letterSpacing: "0.15em", textDecoration: "none" }}
-            >
-              уроки фотографии
-            </a>
+            <div className="flex items-center gap-4">
+              <a
+                href="https://vk.ru/fotoklubpro"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono tracking-widest uppercase"
+                style={{ fontSize: 11, color: "#555", letterSpacing: "0.15em", textDecoration: "none" }}
+              >
+                уроки фотографии
+              </a>
+              <DownloadHtmlButton />
+            </div>
           </div>
 
       </div>
