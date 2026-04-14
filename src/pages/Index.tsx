@@ -108,11 +108,15 @@ export default function Index() {
   const animFrameRef = useRef<number | null>(null);
   const flyStartRef = useRef<number>(0);
 
-  // Квадрат летит снизу вверх и встаёт на первую свободную строку сверху.
-  // Стек растёт вниз: первый → row 0, второй → row 1 и т.д.
+  // Квадрат летит снизу вверх и останавливается на первой пустой ячейке,
+  // под которой стоит занятая или это самое дно — нельзя пролетать сквозь цвет.
   const findTargetRow = useCallback((col: number, g: Grid): number => {
-    for (let r = 0; r < ROWS; r++) {
-      if (g[r][col] === null) return r;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (g[r][col] === null) {
+        // Под этой ячейкой — дно или занятая → останавливаемся здесь
+        if (r === ROWS - 1 || g[r + 1][col] !== null) return r;
+        // Иначе под ней тоже пусто — летим выше, пропускаем
+      }
     }
     return -1; // столбец полон
   }, []);
