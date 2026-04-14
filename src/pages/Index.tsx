@@ -108,12 +108,18 @@ export default function Index() {
   const animFrameRef = useRef<number | null>(null);
   const flyStartRef = useRef<number>(0);
 
-  // Ищем снизу вверх — первую свободную ячейку (квадрат падает и стопорится на первом занятом)
+  // Квадрат летит снизу вверх и останавливается прямо над первой занятой ячейкой снизу.
+  // Если столбец пуст — встаёт на самое дно (row = ROWS-1).
   const findTargetRow = useCallback((col: number, g: Grid): number => {
+    // Ищем самую нижнюю занятую ячейку
     for (let r = ROWS - 1; r >= 0; r--) {
-      if (!g[r][col]) return r;
+      if (g[r][col] !== null) {
+        // Встаём прямо над ней
+        return r - 1 < 0 ? -1 : r - 1;
+      }
     }
-    return -1; // столбец полон
+    // Столбец пуст — дно
+    return ROWS - 1;
   }, []);
 
   const triggerScoreAnim = (pts: number) => {
@@ -202,17 +208,7 @@ export default function Index() {
         setGrid((prev) => {
           const next = prev.map((r) => [...r]) as Grid;
           toRemove.forEach(([r, c]) => { next[r][c] = null; });
-          // Гравитация: в каждом столбце сдвигаем ячейки вниз
-          for (let c = 0; c < COLS; c++) {
-            const filled: Cell[] = [];
-            for (let r = 0; r < ROWS; r++) {
-              if (next[r][c] !== null) filled.push(next[r][c]);
-            }
-            for (let r = 0; r < ROWS; r++) {
-              const fromBottom = ROWS - 1 - r;
-              next[fromBottom][c] = filled.length > 0 ? filled.pop()! : null;
-            }
-          }
+
           return next;
         });
         setPoppingCells(new Set());
