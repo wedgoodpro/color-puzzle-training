@@ -85,6 +85,76 @@ const saveScore = (score: number) => {
 
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
+// Позиции 8 цветов на круге (в градусах, начиная с верха по часовой)
+// 0=жёлтый, 1=оранжевый, 2=красный, 3=фиолетовый, 4=синий, 5=зелёный, 6=белый, 7=чёрный
+const COLOR_ANGLES: Record<number, number> = {
+  0: 0,    // жёлтый — верх
+  1: 45,   // оранжевый
+  2: 90,   // красный — право
+  3: 135,  // фиолетовый
+  4: 180,  // синий — низ
+  5: 225,  // зелёный
+  6: 270,  // белый — лево
+  7: 315,  // чёрный
+};
+
+function ColorWheel({ litColorIds, size }: { litColorIds: Set<number>; size: number }) {
+  const cx = size / 2;
+  const cy = size / 2;
+  const R = size / 2 - 6;
+  const r = R * 0.45;
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {ITTEN_COLORS.map((color) => {
+        const angleDeg = COLOR_ANGLES[color.id] - 90; // -90 чтоб 0° был наверху
+        const rad = (angleDeg * Math.PI) / 180;
+        const segAngle = (2 * Math.PI) / 8;
+        const isLit = litColorIds.has(color.id);
+
+        // Сегмент-дуга
+        const startRad = rad - segAngle / 2;
+        const endRad = rad + segAngle / 2;
+
+        const x1o = cx + R * Math.cos(startRad);
+        const y1o = cy + R * Math.sin(startRad);
+        const x2o = cx + R * Math.cos(endRad);
+        const y2o = cy + R * Math.sin(endRad);
+        const x1i = cx + r * Math.cos(startRad);
+        const y1i = cy + r * Math.sin(startRad);
+        const x2i = cx + r * Math.cos(endRad);
+        const y2i = cy + r * Math.sin(endRad);
+
+        const d = [
+          `M ${x1i} ${y1i}`,
+          `L ${x1o} ${y1o}`,
+          `A ${R} ${R} 0 0 1 ${x2o} ${y2o}`,
+          `L ${x2i} ${y2i}`,
+          `A ${r} ${r} 0 0 0 ${x1i} ${y1i}`,
+          "Z",
+        ].join(" ");
+
+        return (
+          <path
+            key={color.id}
+            d={d}
+            fill={color.hex}
+            opacity={isLit ? 1 : 0.12}
+            stroke={BG}
+            strokeWidth={2}
+            style={{
+              transition: "opacity 0.3s ease",
+              filter: isLit ? `drop-shadow(0 0 6px ${color.hex})` : undefined,
+            }}
+          />
+        );
+      })}
+      {/* Центральный кружок */}
+      <circle cx={cx} cy={cy} r={r * 0.35} fill={BG} opacity={0.8} />
+    </svg>
+  );
+}
+
 const BG = "#2A2A2A";
 const CELL_EMPTY = "#363636";
 const CELL_EMPTY_HOVER = "#404040";
@@ -104,6 +174,7 @@ export default function Index() {
   const [view, setView] = useState<"game" | "scores">("game");
   const [scores, setScores] = useState<ScoreEntry[]>(loadScores());
   const [hoverCol, setHoverCol] = useState<number | null>(null);
+  const [litColorIds, setLitColorIds] = useState<Set<number>>(new Set());
 
   const animFrameRef = useRef<number | null>(null);
   const flyStartRef = useRef<number>(0);
@@ -203,11 +274,15 @@ export default function Index() {
       setPoppingCells(new Set(toRemove.map(([r, c]) => `${r}-${c}`)));
       spawnParticles(toRemove, g);
 
+      // Подсветить цвета в круге
+      const removedColorIds = new Set(toRemove.map(([r, c]) => g[r][c]!.colorId));
+      setLitColorIds(removedColorIds);
+      setTimeout(() => setLitColorIds(new Set()), 1200);
+
       setTimeout(() => {
         setGrid((prev) => {
           const next = prev.map((r) => [...r]) as Grid;
           toRemove.forEach(([r, c]) => { next[r][c] = null; });
-
           return next;
         });
         setPoppingCells(new Set());
@@ -306,49 +381,17 @@ export default function Index() {
         {view === "game" && (
           <div className="flex flex-col items-center gap-6 w-full pt-10">
 
-            {/* HUD: очки | цвет | рекорд */}
+            {/* HUD: круг | цвет | очки+рекорд */}
             <div
-              className="flex items-center justify-between w-full"
-              style={{ maxWidth: BOARD_W }}
+              className="flex items-center w-full"
+              style={{ maxWidth: BOARD_W, gap: 16 }}
             >
-              {/* Очки */}
-              <div className="text-left" style={{ minWidth: 70 }}>
-                <div
-                  className="font-mono font-medium text-white leading-none"
-                  style={{
-                    fontSize: 36,
-                    transform: scoreAnim ? "scale(1.2)" : "scale(1)",
-                    transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1)",
-                    display: "inline-block",
-                    position: "relative",
-                  }}
-                >
-                  {score}
-                  {lastPoints !== null && (
-                    <span
-                      key={score}
-                      className="absolute font-mono font-medium pointer-events-none"
-                      style={{
-                        top: -4,
-                        left: "100%",
-                        marginLeft: 6,
-                        fontSize: lastPoints >= 5 ? 22 : 16,
-                        color: lastPoints >= 5 ? "#F7941D" : "#8DC63F",
-                        animation: "float-up 0.7s ease-out forwards",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      +{lastPoints}
-                    </span>
-                  )}
-                </div>
-                <div className="font-mono text-xs mt-0.5" style={{ color: "#666" }}>
-                  очки
-                </div>
-              </div>
+              {/* Цветовой круг слева */}
+              <ColorWheel litColorIds={litColorIds} size={BOARD_W / 2 - 8} />
 
-              {/* Следующий цвет — по центру */}
-              <div className="flex flex-col items-center gap-0" style={{ flex: 1 }}>
+              {/* Следующий цвет + очки справа */}
+              <div className="flex flex-col items-center gap-3" style={{ flex: 1 }}>
+                {/* Следующий цвет */}
                 <div
                   className="rounded-sm"
                   style={{
@@ -362,18 +405,46 @@ export default function Index() {
                     outline: currentColor.border ? "1px solid #555" : undefined,
                   }}
                 />
-              </div>
 
-              {/* Рекорд */}
-              <div className="text-right" style={{ minWidth: 70 }}>
-                <div
-                  className="font-mono font-medium leading-none"
-                  style={{ fontSize: 36, color: "#555" }}
-                >
-                  {bestScore}
-                </div>
-                <div className="font-mono text-xs mt-0.5" style={{ color: "#555" }}>
-                  рекорд
+                {/* Очки и рекорд */}
+                <div className="flex gap-5 items-end">
+                  <div className="text-center relative">
+                    <div
+                      className="font-mono font-medium text-white leading-none"
+                      style={{
+                        fontSize: 22,
+                        transform: scoreAnim ? "scale(1.2)" : "scale(1)",
+                        transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1)",
+                        display: "inline-block",
+                      }}
+                    >
+                      {score}
+                      {lastPoints !== null && (
+                        <span
+                          key={score}
+                          className="absolute font-mono font-medium pointer-events-none"
+                          style={{
+                            top: -2,
+                            left: "100%",
+                            marginLeft: 4,
+                            fontSize: lastPoints >= 5 ? 16 : 12,
+                            color: lastPoints >= 5 ? "#F7941D" : "#8DC63F",
+                            animation: "float-up 0.7s ease-out forwards",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          +{lastPoints}
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-mono text-xs mt-0.5" style={{ color: "#555", fontSize: 10 }}>очки</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-mono font-medium leading-none" style={{ fontSize: 22, color: "#4a4a4a" }}>
+                      {bestScore}
+                    </div>
+                    <div className="font-mono text-xs mt-0.5" style={{ color: "#555", fontSize: 10 }}>рекорд</div>
+                  </div>
                 </div>
               </div>
             </div>
