@@ -19,64 +19,59 @@ function DownloadHtmlButton() {
     try {
       const origin = window.location.origin;
 
-      // Парсим текущий документ через DOM
-      const doc = document.implementation.createHTMLDocument('');
-      doc.documentElement.innerHTML = document.documentElement.innerHTML;
+      // Загружаем исходный HTML билда с сервера
+      const rawHtml = await fetch(origin + '/').then(r => r.text());
 
-      // Убираем платформенные и аналитические скрипты
+      // Парсим через DOM чтобы удобно манипулировать тегами
+      const doc = document.implementation.createHTMLDocument('');
+      doc.documentElement.innerHTML = rawHtml;
+
+      // Убираем платформенные скрипты (cdn.poehali.dev)
       doc.querySelectorAll('script[src]').forEach(el => {
         const src = el.getAttribute('src') || '';
-        if (src.includes('poehali.dev') || src.includes('yandex') || src.includes('mc.yandex')) {
-          el.remove();
-        }
+        if (src.includes('poehali.dev') || src.includes('yandex')) el.remove();
       });
 
-      // Убираем Яндекс.Метрику (инлайн-скрипт с ym())
+      // Убираем инлайн-скрипты аналитики
       doc.querySelectorAll('script:not([src])').forEach(el => {
-        if (el.textContent?.includes('ym(') || el.textContent?.includes('Metrika')) {
-          el.remove();
-        }
+        if (el.textContent?.includes('ym(') || el.textContent?.includes('Metrika')) el.remove();
       });
 
-      // Убираем noscript с метрикой
+      // Убираем noscript, modulepreload, prefetch, Google Fonts
       doc.querySelectorAll('noscript').forEach(el => el.remove());
-
-      // Убираем Google Fonts ссылки, modulepreload, prefetch
       doc.querySelectorAll('link').forEach(el => {
         const rel = el.getAttribute('rel') || '';
         const href = el.getAttribute('href') || '';
-        if (href.includes('fonts.googleapis') || href.includes('fonts.gstatic')) { el.remove(); return; }
+        if (href.includes('fonts.google') || href.includes('fonts.gstatic')) { el.remove(); return; }
         if (rel === 'modulepreload' || rel === 'prefetch') { el.remove(); return; }
       });
 
-      // Инлайним локальный CSS
-      const cssLinks = [...doc.querySelectorAll('link[rel="stylesheet"]')];
-      for (const el of cssLinks) {
+      // Инлайним CSS
+      for (const el of [...doc.querySelectorAll('link[rel="stylesheet"]')]) {
         const href = el.getAttribute('href') || '';
         if (href.startsWith('http') || href.startsWith('//')) continue;
-        const url = origin + (href.startsWith('/') ? href : '/' + href);
-        const content = await fetch(url).then(r => r.text());
+        const content = await fetch(origin + href).then(r => r.text());
         const style = doc.createElement('style');
         style.textContent = content;
         el.replaceWith(style);
       }
 
-      // Инлайним локальный JS (убираем type=module — блокирует file://)
-      const jsScripts = [...doc.querySelectorAll('script[src]')];
-      for (const el of jsScripts) {
+      // Инлайним JS — создаём тег БЕЗ type=module (это ключевое для file://)
+      for (const el of [...doc.querySelectorAll('script[src]')]) {
         const src = el.getAttribute('src') || '';
         if (src.startsWith('http') || src.startsWith('//')) continue;
-        const url = origin + (src.startsWith('/') ? src : '/' + src);
-        const content = await fetch(url).then(r => r.text());
+        const content = await fetch(origin + src).then(r => r.text());
         const script = doc.createElement('script');
-        script.textContent = content;
+        // НЕ ставим type="module" — ES-модули не работают по file://
+        // Вместо этого оборачиваем в IIFE чтобы не было конфликта переменных
+        script.textContent = `(function(){\n${content}\n})();`;
         el.replaceWith(script);
       }
 
-      // Системный моно-шрифт вместо DM Mono
-      const fallbackStyle = doc.createElement('style');
-      fallbackStyle.textContent = `.font-mono { font-family: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace !important; }`;
-      doc.head.appendChild(fallbackStyle);
+      // Системный шрифт вместо DM Mono
+      const fs = doc.createElement('style');
+      fs.textContent = `.font-mono{font-family:ui-monospace,"Cascadia Code",Menlo,Consolas,monospace!important}`;
+      doc.head.appendChild(fs);
 
       const html = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
       const blob = new Blob([html], { type: 'text/html' });
