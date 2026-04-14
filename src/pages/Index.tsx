@@ -108,18 +108,13 @@ export default function Index() {
   const animFrameRef = useRef<number | null>(null);
   const flyStartRef = useRef<number>(0);
 
-  // Квадрат летит снизу вверх и останавливается прямо под первой занятой ячейкой сверху.
-  // Если столбец пуст — встаёт на самый верх (row = 0).
+  // Квадрат летит снизу вверх и встаёт на первую свободную строку сверху.
+  // Стек растёт вниз: первый → row 0, второй → row 1 и т.д.
   const findTargetRow = useCallback((col: number, g: Grid): number => {
-    // Ищем самую верхнюю занятую ячейку
     for (let r = 0; r < ROWS; r++) {
-      if (g[r][col] !== null) {
-        // Встаём прямо под ней
-        return r + 1 >= ROWS ? -1 : r + 1;
-      }
+      if (g[r][col] === null) return r;
     }
-    // Столбец пуст — самый верх
-    return 0;
+    return -1; // столбец полон
   }, []);
 
   const triggerScoreAnim = (pts: number) => {
