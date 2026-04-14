@@ -1,22 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-// 12 цветов круга Итена
+// 6 основных цветов — комплементарные пары: 0↔3, 1↔4, 2↔5
 const ITTEN_COLORS = [
-  { id: 0,  name: "Красный",           hex: "#E8231A" },
-  { id: 1,  name: "Красно-оранжевый",  hex: "#F05A23" },
-  { id: 2,  name: "Оранжевый",         hex: "#F7941D" },
-  { id: 3,  name: "Жёлто-оранжевый",   hex: "#FDB827" },
-  { id: 4,  name: "Жёлтый",            hex: "#F9E01B" },
-  { id: 5,  name: "Жёлто-зелёный",     hex: "#8DC63F" },
-  { id: 6,  name: "Зелёный",           hex: "#009444" },
-  { id: 7,  name: "Сине-зелёный",      hex: "#00A99D" },
-  { id: 8,  name: "Синий",             hex: "#0072BC" },
-  { id: 9,  name: "Сине-фиолетовый",   hex: "#2E3192" },
-  { id: 10, name: "Фиолетовый",        hex: "#662D91" },
-  { id: 11, name: "Красно-фиолетовый", hex: "#A6195A" },
+  { id: 0, name: "Жёлтый",    hex: "#F9E01B" },
+  { id: 1, name: "Оранжевый", hex: "#F7941D" },
+  { id: 2, name: "Красный",   hex: "#E8231A" },
+  { id: 3, name: "Фиолетовый",hex: "#662D91" },
+  { id: 4, name: "Синий",     hex: "#0072BC" },
+  { id: 5, name: "Зелёный",   hex: "#009444" },
 ];
 
-const getComplement = (id: number) => (id + 6) % 12;
+const getComplement = (id: number) => (id + 3) % 6;
 
 const COLS = 5;
 const ROWS = 8;
@@ -45,7 +39,7 @@ interface ScoreEntry {
 const emptyGrid = (): Grid =>
   Array.from({ length: ROWS }, () => Array(COLS).fill(null));
 
-const randColorId = () => Math.floor(Math.random() * 12);
+const randColorId = () => Math.floor(Math.random() * 6);
 
 const loadScores = (): ScoreEntry[] => {
   try {
@@ -273,12 +267,6 @@ export default function Index() {
                   boxShadow: `0 4px 18px ${ITTEN_COLORS[currentColorId].hex}55`,
                 }}
               />
-              <span className="text-xs font-mono text-neutral-500">
-                {ITTEN_COLORS[currentColorId].name}
-              </span>
-              <span className="text-xs font-mono text-neutral-300">
-                комплемент: {ITTEN_COLORS[getComplement(currentColorId)].name}
-              </span>
             </div>
 
             {/* Board */}
@@ -345,33 +333,7 @@ export default function Index() {
               ))}
             </div>
 
-            {/* Color wheel dots */}
-            <div className="flex gap-1.5 mb-6">
-              {ITTEN_COLORS.map((c) => (
-                <div
-                  key={c.id}
-                  title={c.name}
-                  className="rounded-full"
-                  style={{
-                    width: 9,
-                    height: 9,
-                    backgroundColor: c.hex,
-                    opacity: c.id === currentColorId
-                      ? 1
-                      : c.id === getComplement(currentColorId)
-                      ? 0.7
-                      : 0.25,
-                    transform:
-                      c.id === currentColorId
-                        ? "scale(1.6)"
-                        : c.id === getComplement(currentColorId)
-                        ? "scale(1.3)"
-                        : "scale(1)",
-                    transition: "all 0.25s",
-                  }}
-                />
-              ))}
-            </div>
+
           </div>
         )}
 
@@ -395,15 +357,6 @@ export default function Index() {
                       <span className="font-mono text-xs text-neutral-300 w-4 text-right">
                         {i + 1}
                       </span>
-                      <div
-                        className="rounded-sm"
-                        style={{
-                          width: 10,
-                          height: 28,
-                          backgroundColor: ITTEN_COLORS[i % 12].hex,
-                          opacity: 0.7,
-                        }}
-                      />
                       <span className="font-mono text-2xl font-medium text-neutral-900">
                         {entry.score}
                       </span>
