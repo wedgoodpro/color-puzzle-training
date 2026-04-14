@@ -24,6 +24,8 @@ const ITTEN_COLORS = [
 ];
 
 const TRIADS: number[][] = [[0, 2, 4], [1, 3, 5]];
+// Четверная схема: оранжевый+красный+синий+зелёный (квадрат в круге Итена)
+const TETRAD: number[] = [1, 2, 4, 5];
 
 const getComplement = (id: number): number => {
   if (id <= 5) return (id + 3) % 6;
@@ -233,13 +235,25 @@ export default function Index() {
       let toRemove: [number, number][] = [];
       let points = 0;
 
-      if (triad && triadOthers.every((id) => neighborColorIds.includes(id))) {
+      // Приоритет 1: четвёрка (оранжевый+красный+синий+зелёный) — +100
+      const isTetradColor = TETRAD.includes(colorId);
+      const tetradOthers = TETRAD.filter((id) => id !== colorId);
+      if (isTetradColor && tetradOthers.every((id) => neighborColorIds.includes(id))) {
+        toRemove.push([row, col]);
+        for (const otherId of tetradOthers) {
+          const neighbor = neighbors.find((n) => n.colorId === otherId)!;
+          toRemove.push([neighbor.r, neighbor.c]);
+        }
+        points = 100;
+      // Приоритет 2: триада — +5
+      } else if (triad && triadOthers.every((id) => neighborColorIds.includes(id))) {
         toRemove.push([row, col]);
         for (const otherId of triadOthers) {
           const neighbor = neighbors.find((n) => n.colorId === otherId)!;
           toRemove.push([neighbor.r, neighbor.c]);
         }
         points = 5;
+      // Приоритет 3: пара — +1
       } else {
         const complement = getComplement(colorId);
         for (const n of neighbors) {
@@ -418,8 +432,8 @@ export default function Index() {
                             top: -2,
                             left: "100%",
                             marginLeft: 4,
-                            fontSize: lastPoints >= 5 ? 16 : 12,
-                            color: lastPoints >= 5 ? "#F7941D" : "#8DC63F",
+                            fontSize: lastPoints >= 100 ? 22 : lastPoints >= 5 ? 16 : 12,
+                            color: lastPoints >= 100 ? "#FFD700" : lastPoints >= 5 ? "#F7941D" : "#8DC63F",
                             animation: "float-up 0.7s ease-out forwards",
                             whiteSpace: "nowrap",
                           }}
