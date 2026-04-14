@@ -17,27 +17,36 @@ function DownloadHtmlButton() {
   const download = async () => {
     setLoading(true);
     try {
-      const pageUrl = window.location.origin + window.location.pathname;
+      const origin = window.location.origin;
+      const pageUrl = origin + window.location.pathname;
       const htmlResp = await fetch(pageUrl);
       let html = await htmlResp.text();
 
-      const scriptMatches = [...html.matchAll(/<script[^>]+src="([^"]+)"[^>]*><\/script>/g)];
-      for (const m of scriptMatches) {
-        const src = m[1];
-        if (src.startsWith('http')) continue;
-        const url = src.startsWith('/') ? window.location.origin + src : pageUrl + src;
-        const content = await fetch(url).then(r => r.text());
-        html = html.replace(m[0], `<script>${content}</script>`);
-      }
-
-      const linkMatches = [...html.matchAll(/<link[^>]+rel="stylesheet"[^>]*href="([^"]+)"[^>]*\/?>/g)];
+      // Инлайним CSS
+      const linkMatches = [...html.matchAll(/<link[^>]+href="([^"]+)"[^>]*>/g)];
       for (const m of linkMatches) {
+        if (!m[0].includes('stylesheet')) continue;
         const href = m[1];
         if (href.startsWith('http')) continue;
-        const url = href.startsWith('/') ? window.location.origin + href : pageUrl + href;
+        const url = href.startsWith('/') ? origin + href : pageUrl + href;
         const content = await fetch(url).then(r => r.text());
         html = html.replace(m[0], `<style>${content}</style>`);
       }
+
+      // Инлайним JS (включая type=module — убираем его чтобы работало по file://)
+      const scriptMatches = [...html.matchAll(/<script([^>]*)src="([^"]+)"([^>]*)><\/script>/g)];
+      for (const m of scriptMatches) {
+        const src = m[2];
+        if (src.startsWith('http')) continue;
+        const url = src.startsWith('/') ? origin + src : pageUrl + src;
+        const content = await fetch(url).then(r => r.text());
+        // Убираем type="module" и crossorigin — они блокируют file://
+        html = html.replace(m[0], `<script>${content}</script>`);
+      }
+
+      // Убираем оставшиеся modulepreload и prefetch ссылки (не нужны офлайн)
+      html = html.replace(/<link[^>]+rel="modulepreload"[^>]*>/g, '');
+      html = html.replace(/<link[^>]+rel="prefetch"[^>]*>/g, '');
 
       const blob = new Blob([html], { type: 'text/html' });
       const a = document.createElement('a');
