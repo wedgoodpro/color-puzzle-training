@@ -99,7 +99,7 @@ const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
 const WHEEL_COUNT = ITTEN_COLORS.length; // 12
 
-function ColorWheel({ litColorIds, size, activeId }: { litColorIds: Set<number>; size: number; activeId?: number }) {
+function ColorWheel({ litColorIds, size, activeId, flashActive }: { litColorIds: Set<number>; size: number; activeId?: number; flashActive?: boolean }) {
   const cx = size / 2;
   const cy = size / 2;
   const R = size / 2 - 4;
@@ -113,6 +113,7 @@ function ColorWheel({ litColorIds, size, activeId }: { litColorIds: Set<number>;
         const segAngle = (2 * Math.PI) / WHEEL_COUNT;
         const isLit = litColorIds.has(color.id);
         const isActive = color.id === activeId;
+        const isFlashing = isActive && flashActive;
 
         // Сегмент-дуга
         const startRad = rad - segAngle / 2;
@@ -147,9 +148,11 @@ function ColorWheel({ litColorIds, size, activeId }: { litColorIds: Set<number>;
             style={{
               transition: "opacity 0.3s ease, filter 0.3s ease",
               filter: isLit
-                ? `drop-shadow(0 0 8px ${color.hex})`
+                ? `drop-shadow(0 0 10px ${color.hex})`
+                : isFlashing
+                ? `drop-shadow(0 0 12px ${color.hex}) drop-shadow(0 0 20px ${color.hex}88)`
                 : isActive
-                ? `drop-shadow(0 0 5px ${color.hex}aa)`
+                ? `drop-shadow(0 0 5px ${color.hex}99)`
                 : undefined,
             }}
           />
@@ -181,6 +184,7 @@ export default function Index() {
   const [scores, setScores] = useState<ScoreEntry[]>(loadScores());
   const [hoverCol, setHoverCol] = useState<number | null>(null);
   const [litColorIds, setLitColorIds] = useState<Set<number>>(new Set());
+  const [wheelActiveId, setWheelActiveId] = useState<number | null>(null);
 
   const animFrameRef = useRef<number | null>(null);
   const flyStartRef = useRef<number>(0);
@@ -292,10 +296,16 @@ export default function Index() {
       setPoppingCells(new Set(toRemove.map(([r, c]) => `${r}-${c}`)));
       spawnParticles(toRemove, g);
 
-      // Подсветить цвета в круге
+      // 1) Подсвечиваем исчезнувшие цвета на круге
       const removedColorIds = new Set(toRemove.map(([r, c]) => g[r][c]!.colorId));
       setLitColorIds(removedColorIds);
-      setTimeout(() => setLitColorIds(new Set()), 1200);
+      setWheelActiveId(null); // гасим текущий на время вспышки
+      // 2) Через 700ms гасим и зажигаем текущий цвет (центр)
+      setTimeout(() => {
+        setLitColorIds(new Set());
+        setWheelActiveId(-1); // сигнал — восстановить activeId из currentColorId
+        setTimeout(() => setWheelActiveId(null), 600);
+      }, 700);
 
       setTimeout(() => {
         setGrid((prev) => {
@@ -409,7 +419,12 @@ export default function Index() {
                 const sqSize = innerR * 0.9;
                 return (
                   <div className="relative flex-shrink-0" style={{ width: wheelSize, height: wheelSize }}>
-                    <ColorWheel litColorIds={litColorIds} size={wheelSize} activeId={currentColorId} />
+                    <ColorWheel
+                      litColorIds={litColorIds}
+                      size={wheelSize}
+                      activeId={wheelActiveId === null ? currentColorId : wheelActiveId === -1 ? currentColorId : undefined}
+                      flashActive={wheelActiveId === -1}
+                    />
                     <div
                       className="absolute rounded-sm"
                       style={{
