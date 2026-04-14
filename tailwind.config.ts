@@ -99,6 +99,10 @@ export default {
 					'0%': { transform: 'scale(1)' },
 					'30%': { transform: 'scale(1.4)' },
 					'100%': { transform: 'scale(1)' }
+				},
+			'particle-burst': {
+					'0%': { transform: 'translate(0, 0) scale(1)', opacity: '1' },
+					'100%': { transform: 'translate(var(--tx), var(--ty)) scale(0)', opacity: '0' }
 				}
 			},
 			animation: {
@@ -108,6 +112,7 @@ export default {
 				'fade-in': 'fade-in 0.4s ease-out forwards',
 				'slide-down': 'slide-down 0.3s ease-out forwards',
 				'score-pop': 'score-pop 0.3s ease-out forwards',
+			'particle-burst': 'particle-burst 0.5s cubic-bezier(0.2,0.8,0.4,1) forwards',
 			}
 		}
 	},

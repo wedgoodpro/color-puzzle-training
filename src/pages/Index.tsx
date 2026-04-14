@@ -1,5 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
+interface Particle {
+  id: number;
+  x: number;
+  y: number;
+  color: string;
+  angle: number;
+  dist: number;
+}
+
 // 6 основных цветов — комплементарные пары: 0↔3, 1↔4, 2↔5
 const ITTEN_COLORS = [
   { id: 0, name: "Жёлтый",    hex: "#F9E01B" },
@@ -65,6 +74,8 @@ export default function Index() {
   const [scoreAnim, setScoreAnim] = useState(false);
   const [flyingTile, setFlyingTile] = useState<FlyingTile | null>(null);
   const [poppingCells, setPoppingCells] = useState<Set<string>>(new Set());
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const particleIdRef = useRef(0);
   const [gameOver, setGameOver] = useState(false);
   const [view, setView] = useState<"game" | "scores">("game");
   const [scores, setScores] = useState<ScoreEntry[]>(loadScores());
@@ -111,6 +122,29 @@ export default function Index() {
       const popKey = (r: number, c: number) => `${r}-${c}`;
       const popSet = new Set(toRemove.map(([r, c]) => popKey(r, c)));
       setPoppingCells(popSet);
+
+      // Спавним частицы для каждой исчезающей ячейки
+      const newParticles: Particle[] = [];
+      toRemove.forEach(([r, c]) => {
+        const cellColor = g[r][c]?.colorId ?? 0;
+        const cx = c * (CELL_SIZE + GAP) + CELL_SIZE / 2;
+        const cy = r * (CELL_SIZE + GAP) + CELL_SIZE / 2;
+        for (let i = 0; i < 7; i++) {
+          newParticles.push({
+            id: ++particleIdRef.current,
+            x: cx,
+            y: cy,
+            color: ITTEN_COLORS[cellColor].hex,
+            angle: (360 / 7) * i + Math.random() * 20 - 10,
+            dist: 28 + Math.random() * 28,
+          });
+        }
+      });
+      setParticles((prev) => [...prev, ...newParticles]);
+      setTimeout(() => {
+        const ids = new Set(newParticles.map((p) => p.id));
+        setParticles((prev) => prev.filter((p) => !ids.has(p.id)));
+      }, 550);
 
       setTimeout(() => {
         setGrid((prev) => {
@@ -298,6 +332,30 @@ export default function Index() {
                   );
                 })
               )}
+
+              {/* Particles */}
+              {particles.map((p) => {
+                const rad = (p.angle * Math.PI) / 180;
+                const tx = Math.sin(rad) * p.dist;
+                const ty = -Math.cos(rad) * p.dist;
+                return (
+                  <div
+                    key={p.id}
+                    className="absolute pointer-events-none rounded-full"
+                    style={{
+                      left: p.x - 5,
+                      top: p.y - 5,
+                      width: 10,
+                      height: 10,
+                      backgroundColor: p.color,
+                      animation: `particle-burst 0.5s cubic-bezier(0.2,0.8,0.4,1) forwards`,
+                      ['--tx' as string]: `${tx}px`,
+                      ['--ty' as string]: `${ty}px`,
+                      zIndex: 20,
+                    }}
+                  />
+                );
+              })}
 
               {/* Flying tile */}
               {flyingTile && (
