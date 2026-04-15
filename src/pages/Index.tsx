@@ -139,9 +139,9 @@ export default function Index() {
           100% { transform: translateY(0); }
         }
         @keyframes review-pulse {
-          0%   { transform: scale(1);    box-shadow: 0 0 0px  0px  var(--glow); opacity: 1; }
-          45%  { transform: scale(1.2);  box-shadow: 0 0 22px 8px  var(--glow); opacity: 0.9; }
-          100% { transform: scale(1);    box-shadow: 0 0 0px  0px  var(--glow); opacity: 1; }
+          0%   { transform: scale(1); }
+          45%  { transform: scale(1.2); }
+          100% { transform: scale(1); }
         }
       `}</style>
     </div>
