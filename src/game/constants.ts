@@ -41,15 +41,19 @@ export const COLOR_LEVELS: { threshold: number; ids: number[] }[] = [
   // далее 12 цветов — максимум
 ];
 
-// Поле фиксировано 6×6 навсегда
-export const BASE_COLS = 6;
-export const BASE_ROWS = 6;
+// Старт 5×5, каждая новая пара +1 столбец и +1 строка
+// 6 цветов → 5×5, 8 → 6×6, 10 → 7×7, 12 → 8×8
+export const BASE_COLS = 5;
+export const BASE_ROWS = 5;
 export const BOARD_PX = 330;
 
-export const getGridSize = (_activeCount: number): { cols: number; rows: number } => ({
-  cols: BASE_COLS,
-  rows: BASE_ROWS,
-});
+export const getGridSize = (activeCount: number): { cols: number; rows: number } => {
+  const extraPairs = Math.floor((activeCount - 6) / 2);
+  return {
+    cols: BASE_COLS + extraPairs,
+    rows: BASE_ROWS + extraPairs,
+  };
+};
 
 export const getCellSize = (cols: number): number => {
   const gap = 4;

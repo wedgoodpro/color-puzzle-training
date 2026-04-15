@@ -445,7 +445,7 @@ export function useGameState() {
     }
   }, [grid, gameOver, score]);
 
-  // Разблокировка новых цветов (поле больше не расширяется)
+  // Разблокировка новых цветов + расширение поля каждые 25 очков
   useEffect(() => {
     const activeIds = getActiveColorIds(score);
     const newLen = activeIds.length;
@@ -460,6 +460,16 @@ export function useGameState() {
           setLitColorIds(new Set());
         }, 4000);
       }
+
+      // Расширяем поле: +1 столбец и +1 строка
+      const { cols: newCols, rows: newRows } = getGridSize(newLen);
+      setGridCols(newCols);
+      setGridRows(newRows);
+      setGrid((prev) => {
+        const withNewCol = prev.map((row) => [...row, null as Cell]);
+        const newRow = Array(newCols).fill(null) as Cell[];
+        return [...withNewCol, newRow];
+      });
     }
     prevActiveLenRef.current = newLen;
   }, [score]);
@@ -486,8 +496,8 @@ export function useGameState() {
   };
 
   const activeColorIds = getActiveColorIds(score);
-  const canUndo = score >= 25 && !!undoSnapshot && !undoUsed;
-  const showNextColor = score >= 50;
+  const canUndo = score >= 50 && !!undoSnapshot && !undoUsed;
+  const showNextColor = score >= 75;
 
   return {
     grid,
