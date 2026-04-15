@@ -402,10 +402,10 @@ export function useGameState() {
     [flyingTile, gameOver, newColorsNotice, grid, gridRows, gridCols, currentColorId, findTargetRow, checkAndPop]
   );
 
-  // Проверка game over — верхняя строка заполнена (гравитация к верху)
+  // Проверка game over — всё поле заполнено (нет ни одной свободной ячейки)
   useEffect(() => {
     if (!gameOver && !flyingTile) {
-      const lastRowFull = grid[0]?.every((cell) => cell !== null);
+      const lastRowFull = grid.every((row) => row.every((cell) => cell !== null));
       if (lastRowFull) {
         saveScore(score);
         const updated = loadScores();
@@ -473,7 +473,8 @@ export function useGameState() {
   const getFlyingY = (ft: FlyingTile) => {
     const p = easeOutCubic(ft.progress);
     const endY = ft.targetRow * (cellSize + GAP);
-    const startY = endY + BOARD_H * 0.8;
+    // Стартуем ниже поля на высоту экрана — визуально блок вылетает снизу
+    const startY = BOARD_H + (typeof window !== 'undefined' ? window.innerHeight * 0.5 : 400);
     return startY + (endY - startY) * p;
   };
 

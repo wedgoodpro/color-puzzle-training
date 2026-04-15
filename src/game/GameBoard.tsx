@@ -1,3 +1,4 @@
+import React from "react";
 import {
   BOARD_W, BOARD_H, GAP,
   ITTEN_COLORS, CELL_EMPTY, CELL_EMPTY_HOVER,
@@ -16,6 +17,7 @@ interface GameBoardProps {
   getFlyingY: (ft: FlyingTile) => number;
   onColumnClick: (col: number) => void;
   onColumnHover: (col: number | null) => void;
+  boardRef?: React.RefObject<HTMLDivElement>;
 }
 
 export default function GameBoard({
@@ -30,10 +32,12 @@ export default function GameBoard({
   getFlyingY,
   onColumnClick,
   onColumnHover,
+  boardRef,
 }: GameBoardProps) {
   void rows;
   return (
     <div
+      ref={boardRef}
       className="relative overflow-visible"
       style={{ width: BOARD_W, height: BOARD_H }}
     >
@@ -90,21 +94,7 @@ export default function GameBoard({
         );
       })}
 
-      {/* Flying tile */}
-      {flyingTile && (
-        <div
-          className="absolute rounded-sm pointer-events-none"
-          style={{
-            left: flyingTile.col * (cellSize + GAP),
-            top: getFlyingY(flyingTile),
-            width: cellSize,
-            height: cellSize,
-            backgroundColor: ITTEN_COLORS[flyingTile.colorId].hex,
-            boxShadow: `0 2px 20px ${ITTEN_COLORS[flyingTile.colorId].hex}77`,
-            zIndex: 10,
-          }}
-        />
-      )}
+      {/* Flying tile рендерится в Index.tsx как fixed */}
     </div>
   );
 }
