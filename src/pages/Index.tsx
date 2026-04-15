@@ -34,6 +34,8 @@ export default function Index() {
     canUndo,
     undoUnlocked,
     showNextColor,
+    swapUnlocked,
+    handleSwap,
     restartGame,
     reviewPending,
     reviewCells,
@@ -57,6 +59,8 @@ export default function Index() {
             canUndo={canUndo}
             undoUnlocked={undoUnlocked}
             onUndo={handleUndo}
+            swapUnlocked={swapUnlocked}
+            onSwap={handleSwap}
             score={score}
             comboScore={comboScore}
             bestScore={bestScore}

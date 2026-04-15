@@ -10,6 +10,8 @@ interface WheelPanelProps {
   canUndo: boolean;
   undoUnlocked: boolean;
   onUndo: () => void;
+  swapUnlocked: boolean;
+  onSwap: () => void;
   score: number;
   comboScore: number;
   bestScore: number;
@@ -28,6 +30,8 @@ export default function WheelPanel({
   canUndo,
   undoUnlocked,
   onUndo,
+  swapUnlocked,
+  onSwap,
   score,
   comboScore,
   bestScore,
@@ -52,6 +56,7 @@ export default function WheelPanel({
         {/* Текущий цвет */}
         <div
           className="absolute rounded-sm"
+          onClick={swapUnlocked && litColorIds.size === 0 ? onSwap : undefined}
           style={{
             width: sqSize,
             height: sqSize,
@@ -61,6 +66,8 @@ export default function WheelPanel({
             backgroundColor: currentColor.hex,
             transition: "background-color 0.25s ease, opacity 0.25s ease",
             opacity: litColorIds.size > 0 ? 0 : 1,
+            cursor: swapUnlocked ? "pointer" : "default",
+            boxShadow: swapUnlocked ? `0 0 0 2px ${currentColor.hex}55, 0 0 10px ${currentColor.hex}44` : undefined,
           }}
         />
 
@@ -68,6 +75,7 @@ export default function WheelPanel({
         {showNextColor && (
           <div
             className="absolute rounded-sm"
+            onClick={swapUnlocked && litColorIds.size === 0 ? onSwap : undefined}
             style={{
               width: nextSqSize,
               height: nextSqSize,
@@ -75,9 +83,12 @@ export default function WheelPanel({
               left: "50%",
               transform: `translate(calc(-50% + ${sqSize * 0.72}px), calc(-50% - ${sqSize * 0.52}px))`,
               backgroundColor: nextColor.hex,
-              boxShadow: `0 1px 8px ${nextColor.hex}88`,
+              boxShadow: swapUnlocked
+                ? `0 0 0 2px ${nextColor.hex}88, 0 0 10px ${nextColor.hex}66`
+                : `0 1px 8px ${nextColor.hex}88`,
               opacity: litColorIds.size > 0 ? 0 : 1,
               transition: "background-color 0.25s ease, opacity 0.25s ease",
+              cursor: swapUnlocked ? "pointer" : "default",
             }}
           />
         )}

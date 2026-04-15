@@ -565,6 +565,13 @@ export function useGameState() {
   const undoUnlocked = score >= 50;
   const canUndo = undoUnlocked && !!undoSnapshot && !undoUsed;
   const showNextColor = score >= 75;
+  const swapUnlocked = score >= 100;
+
+  const handleSwap = useCallback(() => {
+    if (!swapUnlocked || gameOver || newColorsNotice) return;
+    setCurrentColorId(nextColorId);
+    setNextColorId(currentColorId);
+  }, [swapUnlocked, gameOver, newColorsNotice, currentColorId, nextColorId]);
 
   // Тап для продолжения после паузы-ревью
   const handleReviewTap = useCallback(() => {
@@ -601,6 +608,8 @@ export function useGameState() {
     canUndo,
     undoUnlocked,
     showNextColor,
+    swapUnlocked,
+    handleSwap,
     restartGame,
     reviewPending,
     reviewCells,
