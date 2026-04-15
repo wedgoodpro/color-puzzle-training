@@ -1,11 +1,14 @@
 import {
-  BOARD_W, BOARD_H, CELL_SIZE, GAP,
+  BOARD_W, BOARD_H, GAP,
   ITTEN_COLORS, CELL_EMPTY, CELL_EMPTY_HOVER,
   Grid, FlyingTile, Particle,
 } from "./constants";
 
 interface GameBoardProps {
   grid: Grid;
+  cols: number;
+  rows: number;
+  cellSize: number;
   flyingTile: FlyingTile | null;
   particles: Particle[];
   poppingCells: Set<string>;
@@ -17,6 +20,9 @@ interface GameBoardProps {
 
 export default function GameBoard({
   grid,
+  cols,
+  rows,
+  cellSize,
   flyingTile,
   particles,
   poppingCells,
@@ -25,6 +31,7 @@ export default function GameBoard({
   onColumnClick,
   onColumnHover,
 }: GameBoardProps) {
+  void rows;
   return (
     <div
       className="relative overflow-visible"
@@ -44,10 +51,10 @@ export default function GameBoard({
               onMouseLeave={() => onColumnHover(null)}
               className="absolute cursor-pointer rounded-sm"
               style={{
-                left: ci * (CELL_SIZE + GAP),
-                top: ri * (CELL_SIZE + GAP),
-                width: CELL_SIZE,
-                height: CELL_SIZE,
+                left: ci * (cellSize + GAP),
+                top: ri * (cellSize + GAP),
+                width: cellSize,
+                height: cellSize,
                 backgroundColor: c ? c.hex : isHoverCol ? CELL_EMPTY_HOVER : CELL_EMPTY,
                 animation: isPopping
                   ? "pop 0.32s cubic-bezier(0.36,0.07,0.19,0.97) forwards"
@@ -88,10 +95,10 @@ export default function GameBoard({
         <div
           className="absolute rounded-sm pointer-events-none"
           style={{
-            left: flyingTile.col * (CELL_SIZE + GAP),
+            left: flyingTile.col * (cellSize + GAP),
             top: getFlyingY(flyingTile),
-            width: CELL_SIZE,
-            height: CELL_SIZE,
+            width: cellSize,
+            height: cellSize,
             backgroundColor: ITTEN_COLORS[flyingTile.colorId].hex,
             boxShadow: `0 2px 20px ${ITTEN_COLORS[flyingTile.colorId].hex}77`,
             zIndex: 10,

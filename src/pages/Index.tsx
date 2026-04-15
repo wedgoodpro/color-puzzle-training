@@ -5,11 +5,13 @@ import GameBoard from "@/game/GameBoard";
 import { GameOverModal } from "@/game/GameOverlay";
 import {
   ITTEN_COLORS, COLOR_LEVELS,
-  COLS, ROWS, CELL_SIZE, GAP, BOARD_W, BOARD_H, ANIM_DURATION, BG,
+  BOARD_W, BOARD_H, ANIM_DURATION, BG,
+  POINTS_PAIR, POINTS_TRIAD, POINTS_TETRAD,
   Cell, Grid, FlyingTile, Particle,
   getComplement, getTriad, getTetrad,
   getActiveColorIds, randColorIdFromActive,
   emptyGrid, loadScores, getBestScore, saveScore, easeOutCubic,
+  getGridSize, getCellSize, GAP,
 } from "@/game/constants";
 
 function DownloadHtmlButton() {
@@ -22,12 +24,10 @@ function DownloadHtmlButton() {
       const zip = new JSZip();
       const folder = zip.folder('colorist-game')!;
 
-      // Загружаем index.html
       const rawHtml = await fetch(origin + '/').then(r => r.text());
       const doc = document.implementation.createHTMLDocument('');
       doc.documentElement.innerHTML = rawHtml;
 
-      // Убираем платформенные скрипты и аналитику
       doc.querySelectorAll('script[src]').forEach(el => {
         const src = el.getAttribute('src') || '';
         if (src.includes('poehali.dev') || src.includes('yandex')) el.remove();
@@ -43,12 +43,10 @@ function DownloadHtmlButton() {
         if (rel === 'modulepreload' || rel === 'prefetch') { el.remove(); return; }
       });
 
-      // Добавляем системный шрифт
       const fs = doc.createElement('style');
       fs.textContent = `.font-mono{font-family:ui-monospace,"Cascadia Code",Menlo,Consolas,monospace!important}`;
       doc.head.appendChild(fs);
 
-      // Собираем список локальных ассетов из HTML
       const assetPaths = new Set<string>();
       doc.querySelectorAll('link[href]').forEach(el => {
         const href = el.getAttribute('href') || '';
@@ -59,18 +57,14 @@ function DownloadHtmlButton() {
         if (!src.startsWith('http') && !src.startsWith('//')) assetPaths.add(src);
       });
 
-      // Скачиваем каждый ассет и кладём в ZIP
       for (const path of assetPaths) {
         const url = origin + (path.startsWith('/') ? path : '/' + path);
         const data = await fetch(url).then(r => r.arrayBuffer());
-        // path вида /assets/index-xxx.js → assets/index-xxx.js
         folder.file(path.replace(/^\//, ''), data);
       }
 
-      // Сохраняем index.html
       folder.file('index.html', '<!DOCTYPE html>\n' + doc.documentElement.outerHTML);
 
-      // Генерируем ZIP
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(zipBlob);
@@ -96,10 +90,15 @@ function DownloadHtmlButton() {
 }
 
 export default function Index() {
-  const [grid, setGrid] = useState<Grid>(emptyGrid());
+  const initialActiveIds = getActiveColorIds(0);
+  const { cols: initCols, rows: initRows } = getGridSize(initialActiveIds.length);
+
+  const [grid, setGrid] = useState<Grid>(emptyGrid(initRows, initCols));
+  const [gridCols, setGridCols] = useState(initCols);
+  const [gridRows, setGridRows] = useState(initRows);
   const [score, setScore] = useState(0);
-  const activeColorIds = getActiveColorIds(score);
-  const [currentColorId, setCurrentColorId] = useState<number>(() => randColorIdFromActive(getActiveColorIds(0)));
+  const scoreRef = useRef(0);
+  const [currentColorId, setCurrentColorId] = useState<number>(() => randColorIdFromActive(initialActiveIds));
   const [bestScore, setBestScore] = useState(getBestScore());
   const [scoreAnim, setScoreAnim] = useState(false);
   const [lastPoints, setLastPoints] = useState<number | null>(null);
@@ -111,20 +110,18 @@ export default function Index() {
   const [hoverCol, setHoverCol] = useState<number | null>(null);
   const [litColorIds, setLitColorIds] = useState<Set<number>>(new Set());
   const [newColorsNotice, setNewColorsNotice] = useState<string | null>(null);
-  const prevActiveLenRef = useRef(getActiveColorIds(0).length);
-  const lastTwoColorsRef = useRef<number[]>([]); // последние 2 выпавших цвета
+  const prevActiveLenRef = useRef(initialActiveIds.length);
+  const lastTwoColorsRef = useRef<number[]>([]);
 
   const animFrameRef = useRef<number | null>(null);
   const flyStartRef = useRef<number>(0);
 
-  // Квадрат летит снизу вверх.
-  // Первый в пустом столбце → row 0 (верх).
-  // Следующий → row 1 (под предыдущим). Стек растёт вниз.
-  // Нельзя пролетать сквозь занятые: встаёт на строку НИЖЕ последней занятой сверху.
-  const findTargetRow = useCallback((col: number, g: Grid): number => {
+  const cellSize = getCellSize(gridCols);
+
+  const findTargetRow = useCallback((col: number, g: Grid, rows: number): number => {
     let top = 0;
-    while (top < ROWS && g[top][col] !== null) top++;
-    if (top >= ROWS) return -1;
+    while (top < rows && g[top][col] !== null) top++;
+    if (top >= rows) return -1;
     return top;
   }, []);
 
@@ -134,12 +131,12 @@ export default function Index() {
     setTimeout(() => { setScoreAnim(false); setLastPoints(null); }, 700);
   };
 
-  const spawnParticles = useCallback((cells: [number, number][], g: Grid) => {
+  const spawnParticles = useCallback((cells: [number, number][], g: Grid, cs: number) => {
     const newParticles: Particle[] = [];
     cells.forEach(([r, c]) => {
       const cellColor = g[r][c]?.colorId ?? 0;
-      const cx = c * (CELL_SIZE + GAP) + CELL_SIZE / 2;
-      const cy = r * (CELL_SIZE + GAP) + CELL_SIZE / 2;
+      const cx = c * (cs + GAP) + cs / 2;
+      const cy = r * (cs + GAP) + cs / 2;
       for (let i = 0; i < 8; i++) {
         newParticles.push({
           id: ++particleIdRef.current,
@@ -159,7 +156,7 @@ export default function Index() {
   }, []);
 
   const checkAndPop = useCallback(
-    (g: Grid, row: number, col: number, colorId: number) => {
+    (g: Grid, row: number, col: number, colorId: number, rows: number, cols: number, cs: number) => {
       const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
       const triad = getTriad(colorId);
       const triadOthers = triad ? triad.filter((id) => id !== colorId) : [];
@@ -168,7 +165,7 @@ export default function Index() {
       for (const [dr, dc] of dirs) {
         const nr = row + dr;
         const nc = col + dc;
-        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && g[nr][nc]) {
+        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && g[nr][nc]) {
           neighbors.push({ r: nr, c: nc, colorId: g[nr][nc]!.colorId });
         }
       }
@@ -178,7 +175,7 @@ export default function Index() {
       let toRemove: [number, number][] = [];
       let points = 0;
 
-      // Приоритет 1: тетрада (4 цвета через 3 позиции) — +100
+      // Приоритет 1: тетрада — POINTS_TETRAD (6)
       const tetrad = getTetrad(colorId);
       const tetradOthers = tetrad ? tetrad.filter((id) => id !== colorId) : [];
       if (tetrad && tetradOthers.every((id) => neighborColorIds.includes(id))) {
@@ -187,23 +184,23 @@ export default function Index() {
           const neighbor = neighbors.find((n) => n.colorId === otherId)!;
           toRemove.push([neighbor.r, neighbor.c]);
         }
-        points = 100;
-      // Приоритет 2: триада — +5
+        points = POINTS_TETRAD;
+      // Приоритет 2: триада — POINTS_TRIAD (4)
       } else if (triad && triadOthers.every((id) => neighborColorIds.includes(id))) {
         toRemove.push([row, col]);
         for (const otherId of triadOthers) {
           const neighbor = neighbors.find((n) => n.colorId === otherId)!;
           toRemove.push([neighbor.r, neighbor.c]);
         }
-        points = 5;
-      // Приоритет 3: пара — +1
+        points = POINTS_TRIAD;
+      // Приоритет 3: пара — POINTS_PAIR (1)
       } else {
         const complement = getComplement(colorId);
         for (const n of neighbors) {
           if (n.colorId === complement) {
             if (toRemove.length === 0) toRemove.push([row, col]);
             toRemove.push([n.r, n.c]);
-            points += 1;
+            points += POINTS_PAIR;
           }
         }
       }
@@ -219,9 +216,8 @@ export default function Index() {
       });
 
       setPoppingCells(new Set(toRemove.map(([r, c]) => `${r}-${c}`)));
-      spawnParticles(toRemove, g);
+      spawnParticles(toRemove, g, cs);
 
-      // Подсвечиваем исчезнувшие, остальные гаснут
       const removedColorIds = new Set(toRemove.map(([r, c]) => g[r][c]!.colorId));
       setLitColorIds(removedColorIds);
       setTimeout(() => setLitColorIds(new Set()), 900);
@@ -233,7 +229,11 @@ export default function Index() {
           return next;
         });
         setPoppingCells(new Set());
-        setScore((s) => s + points);
+        setScore((s) => {
+          const newScore = s + points;
+          scoreRef.current = newScore;
+          return newScore;
+        });
         triggerScoreAnim(points);
       }, 320);
     },
@@ -243,10 +243,12 @@ export default function Index() {
   const handleColumnClick = useCallback(
     (col: number) => {
       if (flyingTile || gameOver) return;
-      const targetRow = findTargetRow(col, grid);
+      const targetRow = findTargetRow(col, grid, gridRows);
       if (targetRow === -1) return;
 
       const colorId = currentColorId;
+      const activeColorIds = getActiveColorIds(scoreRef.current);
+      const cs = getCellSize(gridCols);
       flyStartRef.current = performance.now();
       setFlyingTile({ col, colorId, targetRow, progress: 0 });
 
@@ -262,10 +264,9 @@ export default function Index() {
           setGrid((prev) => {
             const next = prev.map((r) => [...r]) as Grid;
             next[targetRow][col] = { colorId };
-            checkAndPop(next, targetRow, col, colorId);
+            checkAndPop(next, targetRow, col, colorId, gridRows, gridCols, cs);
             return next;
           });
-          // Не допускаем 3 подряд одинаковых
           const last2 = lastTwoColorsRef.current;
           const excludeId = last2.length === 2 && last2[0] === last2[1] ? last2[0] : undefined;
           const nextId = randColorIdFromActive(activeColorIds, excludeId);
@@ -276,12 +277,13 @@ export default function Index() {
 
       animFrameRef.current = requestAnimationFrame(animate);
     },
-    [flyingTile, gameOver, grid, currentColorId, findTargetRow, checkAndPop, activeColorIds]
+    [flyingTile, gameOver, grid, gridRows, gridCols, currentColorId, findTargetRow, checkAndPop]
   );
 
+  // Проверка game over — последняя строка заполнена
   useEffect(() => {
     if (!gameOver && !flyingTile) {
-      const lastRowFull = grid[ROWS - 1].every((cell) => cell !== null);
+      const lastRowFull = grid[gridRows - 1]?.every((cell) => cell !== null);
       if (lastRowFull) {
         saveScore(score);
         const updated = loadScores();
@@ -289,11 +291,12 @@ export default function Index() {
         setGameOver(true);
       }
     }
-  }, [grid, flyingTile, gameOver, score]);
+  }, [grid, flyingTile, gameOver, score, gridRows]);
 
-  // Уведомление при разблокировке новых цветов
+  // Разблокировка новых цветов и расширение поля
   useEffect(() => {
-    const newLen = activeColorIds.length;
+    const activeIds = getActiveColorIds(score);
+    const newLen = activeIds.length;
     if (newLen > prevActiveLenRef.current) {
       const added = COLOR_LEVELS.find((l) => l.threshold === score);
       if (added) {
@@ -301,9 +304,21 @@ export default function Index() {
         setNewColorsNotice(`+2 новых цвета: ${names}!`);
         setTimeout(() => setNewColorsNotice(null), 5000);
       }
+
+      // Расширяем поле: +1 столбец и +1 строка
+      const { cols: newCols, rows: newRows } = getGridSize(newLen);
+      setGridCols(newCols);
+      setGridRows(newRows);
+      setGrid((prev) => {
+        // Добавляем новый столбец (null) к каждой существующей строке
+        const withNewCol = prev.map((row) => [...row, null as Cell]);
+        // Добавляем новую строку снизу
+        const newRow = Array(newCols).fill(null) as Cell[];
+        return [...withNewCol, newRow];
+      });
     }
     prevActiveLenRef.current = newLen;
-  }, [score]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [score]);
 
   useEffect(() => {
     return () => {
@@ -313,24 +328,30 @@ export default function Index() {
 
   const restartGame = () => {
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    setGrid(emptyGrid());
-    setCurrentColorId(randColorIdFromActive(getActiveColorIds(0)));
+    const startIds = getActiveColorIds(0);
+    const { cols, rows } = getGridSize(startIds.length);
+    setGrid(emptyGrid(rows, cols));
+    setGridCols(cols);
+    setGridRows(rows);
+    setCurrentColorId(randColorIdFromActive(startIds));
     setScore(0);
+    scoreRef.current = 0;
     setFlyingTile(null);
     setPoppingCells(new Set());
     setGameOver(false);
     setLastPoints(null);
-    prevActiveLenRef.current = getActiveColorIds(0).length;
+    prevActiveLenRef.current = startIds.length;
     lastTwoColorsRef.current = [];
   };
 
   const getFlyingY = (ft: FlyingTile) => {
     const p = easeOutCubic(ft.progress);
-    const startY = BOARD_H + CELL_SIZE * 0.5;
-    const endY = ft.targetRow * (CELL_SIZE + GAP);
+    const startY = BOARD_H + cellSize * 0.5;
+    const endY = ft.targetRow * (cellSize + GAP);
     return startY + (endY - startY) * p;
   };
 
+  const activeColorIds = getActiveColorIds(score);
   const currentColor = ITTEN_COLORS[currentColorId];
 
   return (
@@ -347,14 +368,10 @@ export default function Index() {
               const R = wheelSize / 2 - 4;
               const innerR = R * 0.38;
               const sqSize = innerR * 0.85;
-              const cornerPad = (BOARD_W - wheelSize) / 2 + 6;
-              void cornerPad;
               return (
                 <div className="relative" style={{ width: BOARD_W, height: wheelSize }}>
-                  {/* Круг по центру */}
                   <div className="absolute" style={{ left: (BOARD_W - wheelSize) / 2, top: 0 }}>
                     <ColorWheel litColorIds={litColorIds} activeColorIds={new Set(activeColorIds)} size={wheelSize} />
-                    {/* Квадрат в центре круга */}
                     <div
                       className="absolute rounded-sm"
                       style={{
@@ -390,8 +407,8 @@ export default function Index() {
                             top: -2,
                             left: "100%",
                             marginLeft: 4,
-                            fontSize: lastPoints >= 100 ? 18 : lastPoints >= 5 ? 14 : 11,
-                            color: lastPoints >= 100 ? "#FFD700" : lastPoints >= 5 ? "#F7941D" : "#8DC63F",
+                            fontSize: lastPoints >= POINTS_TETRAD ? 18 : lastPoints >= POINTS_TRIAD ? 14 : 11,
+                            color: lastPoints >= POINTS_TETRAD ? "#FFD700" : lastPoints >= POINTS_TRIAD ? "#F7941D" : "#8DC63F",
                             animation: "float-up 0.7s ease-out forwards",
                             whiteSpace: "nowrap",
                           }}
@@ -426,6 +443,9 @@ export default function Index() {
 
             <GameBoard
               grid={grid}
+              cols={gridCols}
+              rows={gridRows}
+              cellSize={cellSize}
               flyingTile={flyingTile}
               particles={particles}
               poppingCells={poppingCells}
@@ -435,7 +455,6 @@ export default function Index() {
               onColumnHover={setHoverCol}
             />
 
-            {/* Ссылка */}
             <div className="flex flex-col items-center gap-6 w-full pb-2">
               <a
                 href="https://vk.ru/fotoklubpro"
