@@ -14,9 +14,21 @@ export function useGameState() {
   const initialActiveIds = getActiveColorIds(0);
   const { cols: initCols, rows: initRows } = getGridSize(initialActiveIds.length);
 
-  const [grid, setGrid] = useState<Grid>(emptyGrid(initRows, initCols));
-  const [gridCols, setGridCols] = useState(initCols);
-  const [gridRows, setGridRows] = useState(initRows);
+  const [grid, setGridState] = useState<Grid>(emptyGrid(initRows, initCols));
+  const gridRef = useRef<Grid>(emptyGrid(initRows, initCols));
+  const setGrid = (g: Grid | ((prev: Grid) => Grid)) => {
+    if (typeof g === 'function') {
+      setGridState((prev) => { const next = g(prev); gridRef.current = next; return next; });
+    } else {
+      gridRef.current = g; setGridState(g);
+    }
+  };
+  const [gridCols, setGridColsState] = useState(initCols);
+  const [gridRows, setGridRowsState] = useState(initRows);
+  const gridColsRef = useRef(initCols);
+  const gridRowsRef = useRef(initRows);
+  const setGridCols = (v: number) => { gridColsRef.current = v; setGridColsState(v); };
+  const setGridRows = (v: number) => { gridRowsRef.current = v; setGridRowsState(v); };
   const [score, setScore] = useState(0);
   const scoreRef = useRef(0);
   const [currentColorId, setCurrentColorId] = useState<number>(() => randColorIdFromActive(initialActiveIds));
@@ -346,12 +358,12 @@ export function useGameState() {
   const handleColumnClick = useCallback(
     (col: number) => {
       if (flyingTile || gameOver || newColorsNotice) return;
-      const targetRow = findTargetRow(col, grid, gridRows);
+      const targetRow = findTargetRow(col, gridRef.current, gridRowsRef.current);
       if (targetRow === -1) return;
 
       const colorId = currentColorId;
       const activeColorIds = getActiveColorIds(scoreRef.current);
-      const cs = getCellSize(gridCols);
+      const cs = getCellSize(gridColsRef.current);
       flyStartRef.current = performance.now();
       setFlyingTile({ col, colorId, targetRow, progress: 0 });
 
@@ -364,12 +376,19 @@ export function useGameState() {
           animFrameRef.current = requestAnimationFrame(animate);
         } else {
           setFlyingTile(null);
-          setGrid((prev) => {
-            const next = prev.map((r) => [...r]) as Grid;
-            next[targetRow][col] = { colorId };
-            checkAndPop(next, targetRow, col, colorId, gridRows, gridCols, cs);
-            return next;
-          });
+          // Строим новый grid, применяем гравитацию, запускаем проверку совпадений
+          const rows = gridRowsRef.current;
+          const cols = gridColsRef.current;
+          const currentGrid = gridRef.current.map((r) => [...r]) as Grid;
+          currentGrid[targetRow][col] = { colorId };
+          const afterGravity = applyGravity(currentGrid, rows, cols);
+          let filledCount = 0;
+          for (let r = 0; r < rows; r++) {
+            if (afterGravity[r][col] !== null) filledCount++;
+          }
+          const newRow = filledCount - 1;
+          setGrid(afterGravity);
+          checkAndPop(afterGravity, newRow, col, colorId, rows, cols, cs);
           const last2 = lastTwoColorsRef.current;
           const excludeId = last2.length === 2 && last2[0] === last2[1] ? last2[0] : undefined;
           const nextId = randColorIdFromActive(activeColorIds, excludeId);
@@ -453,7 +472,7 @@ export function useGameState() {
 
   const getFlyingY = (ft: FlyingTile) => {
     const p = easeOutCubic(ft.progress);
-    const startY = BOARD_H + cellSize * 0.5;
+    const startY = BOARD_H + cellSize * 2;
     const endY = ft.targetRow * (cellSize + GAP);
     return startY + (endY - startY) * p;
   };
