@@ -13,6 +13,7 @@ export default function Index() {
     score,
     comboScore,
     bestScore,
+    bestCombo,
     scoreAnim,
     lastPoints,
     poppingCells,
@@ -59,6 +60,7 @@ export default function Index() {
             score={score}
             comboScore={comboScore}
             bestScore={bestScore}
+            bestCombo={bestCombo}
             scoreAnim={scoreAnim}
             lastPoints={lastPoints}
             boardPx={boardPx}

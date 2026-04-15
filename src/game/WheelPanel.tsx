@@ -13,6 +13,7 @@ interface WheelPanelProps {
   score: number;
   comboScore: number;
   bestScore: number;
+  bestCombo: number;
   scoreAnim: boolean;
   lastPoints: number | null;
   boardPx?: number;
@@ -30,6 +31,7 @@ export default function WheelPanel({
   score,
   comboScore,
   bestScore,
+  bestCombo,
   scoreAnim,
   lastPoints,
   boardPx = BOARD_W,
@@ -117,9 +119,9 @@ export default function WheelPanel({
       {/* Рекорд — правый верхний угол */}
       <div className="absolute text-right" style={{ right: 0, top: 4 }}>
         <div className="font-mono font-medium leading-none" style={{ fontSize: 24, color: "#4a4a4a" }}>
-          {bestScore}
+          {bestScore} <span style={{ color: "#3a3a3a" }}>/</span> {bestCombo}
         </div>
-        <div className="font-mono" style={{ color: "#555", fontSize: 10 }}>рекорд</div>
+        <div className="font-mono" style={{ color: "#555", fontSize: 10 }}>рекорд очков / схем</div>
       </div>
 
       {/* Комбо-счётчик — нижний левый угол */}

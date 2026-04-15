@@ -155,6 +155,17 @@ export const saveScore = (score: number) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(scores.slice(0, 10)));
 };
 
+const COMBO_KEY = "colorist_best_combo_v1";
+export const getBestCombo = (): number => {
+  try { return parseInt(localStorage.getItem(COMBO_KEY) || "0", 10); } catch (e) { return 0; }
+};
+export const saveBestCombo = (combo: number) => {
+  try {
+    const prev = getBestCombo();
+    if (combo > prev) localStorage.setItem(COMBO_KEY, String(combo));
+  } catch (e) { /* ignore */ }
+};
+
 export const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
 export const pluralScore = (n: number) => {

@@ -7,6 +7,7 @@ import {
   getActiveColorIds, randColorIdFromActive,
   emptyGrid, loadScores, getBestScore, saveScore,
   getGridSize, getCellSize, GAP,
+  getBestCombo, saveBestCombo,
 } from "@/game/constants";
 
 export function useGameState() {
@@ -37,6 +38,7 @@ export function useGameState() {
   const [currentColorId, setCurrentColorId] = useState<number>(() => randColorIdFromActive(initialActiveIds));
   const [nextColorId, setNextColorId] = useState<number>(() => randColorIdFromActive(initialActiveIds, randColorIdFromActive(initialActiveIds)));
   const [bestScore, setBestScore] = useState(getBestScore());
+  const [bestCombo, setBestCombo] = useState(getBestCombo());
   const [scoreAnim, setScoreAnim] = useState(false);
   const [lastPoints, setLastPoints] = useState<number | null>(null);
   const [poppingCells, setPoppingCells] = useState<Set<string>>(new Set());
@@ -354,7 +356,12 @@ export function useGameState() {
             });
             // Комбо-счётчик: +1 за каждую триаду или тетраду
             if (pts >= POINTS_TRIAD) {
-              setComboScore((c) => c + 1);
+              setComboScore((c) => {
+                const next = c + 1;
+                saveBestCombo(next);
+                setBestCombo(getBestCombo());
+                return next;
+              });
             }
             const actualRows = gridRef.current.length;
             const actualCols = gridRef.current[0]?.length ?? cols;
@@ -573,6 +580,7 @@ export function useGameState() {
     score,
     comboScore,
     bestScore,
+    bestCombo,
     scoreAnim,
     lastPoints,
     poppingCells,
