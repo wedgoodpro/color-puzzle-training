@@ -48,7 +48,7 @@ export default function GameBoard({
     let slotIdx = 0;
     for (let ri = 0; ri < actualRows; ri++) {
       const cell = grid[ri]?.[ci];
-      if (cell !== null) {
+      if (cell != null) {
         colorCells.push({
           key: `c${ci}s${slotIdx}`,
           ci, ri,
