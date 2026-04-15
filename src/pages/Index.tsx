@@ -11,6 +11,7 @@ export default function Index() {
     gridCols,
     gridRows,
     score,
+    comboScore,
     bestScore,
     scoreAnim,
     lastPoints,

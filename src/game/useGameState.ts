@@ -33,6 +33,7 @@ export function useGameState() {
   const setGridRows = (v: number) => { gridRowsRef.current = v; setGridRowsState(v); };
   const [score, setScore] = useState(0);
   const scoreRef = useRef(0);
+  const [comboScore, setComboScore] = useState(0);
   const [currentColorId, setCurrentColorId] = useState<number>(() => randColorIdFromActive(initialActiveIds));
   const [nextColorId, setNextColorId] = useState<number>(() => randColorIdFromActive(initialActiveIds, randColorIdFromActive(initialActiveIds)));
   const [bestScore, setBestScore] = useState(getBestScore());
@@ -351,6 +352,10 @@ export function useGameState() {
               scoreRef.current = newScore;
               return newScore;
             });
+            // Комбо-счётчик: +1 за каждую триаду или тетраду
+            if (pts >= POINTS_TRIAD) {
+              setComboScore((c) => c + 1);
+            }
             const actualRows = gridRef.current.length;
             const actualCols = gridRef.current[0]?.length ?? cols;
             const nextMatch = findAnyMatch(cleanGrid, Math.min(rows, actualRows), Math.min(cols, actualCols));
@@ -535,6 +540,7 @@ export function useGameState() {
     setNextColorId(secondColor);
     setScore(0);
     scoreRef.current = 0;
+    setComboScore(0);
     setPoppingCells(new Set());
     setGameOver(false);
     setLastPoints(null);
@@ -561,6 +567,7 @@ export function useGameState() {
     gridCols,
     gridRows,
     score,
+    comboScore,
     bestScore,
     scoreAnim,
     lastPoints,
