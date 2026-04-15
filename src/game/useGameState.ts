@@ -31,6 +31,7 @@ export function useGameState() {
   const [score, setScore] = useState(0);
   const scoreRef = useRef(0);
   const [currentColorId, setCurrentColorId] = useState<number>(() => randColorIdFromActive(initialActiveIds));
+  const [nextColorId, setNextColorId] = useState<number>(() => randColorIdFromActive(initialActiveIds));
   const [bestScore, setBestScore] = useState(getBestScore());
   const [scoreAnim, setScoreAnim] = useState(false);
   const [lastPoints, setLastPoints] = useState<number | null>(null);
@@ -44,6 +45,9 @@ export function useGameState() {
   const [newColorsNotice, setNewColorsNotice] = useState<{ names: string[]; ids: number[] } | null>(null);
   const prevActiveLenRef = useRef(initialActiveIds.length);
   const lastTwoColorsRef = useRef<number[]>([]);
+  // Undo: сохраняем snapshot до хода
+  const [undoSnapshot, setUndoSnapshot] = useState<{ grid: Grid; currentColorId: number; nextColorId: number; score: number } | null>(null);
+  const [undoUsed, setUndoUsed] = useState(false);
 
   const cellSize = getCellSize(gridCols);
 
@@ -384,6 +388,15 @@ export function useGameState() {
       const rows = gridRowsRef.current;
       const cols = gridColsRef.current;
 
+      // Сохраняем snapshot для undo (один раз за игру пока не использован)
+      setUndoSnapshot({
+        grid: gridRef.current.map((r) => [...r]) as Grid,
+        currentColorId: colorId,
+        nextColorId,
+        score: scoreRef.current,
+      });
+      setUndoUsed(false);
+
       const currentGrid = gridRef.current.map((r) => [...r]) as Grid;
       currentGrid[targetRow][col] = { colorId };
       const afterGravity = applyGravity(currentGrid, rows, cols);
@@ -394,14 +407,30 @@ export function useGameState() {
       const newRow = filledCount - 1;
       setGrid(afterGravity);
       checkAndPop(afterGravity, newRow, col, colorId, rows, cols, cs);
+
+      // Следующий цвет становится текущим, генерируем новый следующий
       const last2 = lastTwoColorsRef.current;
       const excludeId = last2.length === 2 && last2[0] === last2[1] ? last2[0] : undefined;
-      const nextId = randColorIdFromActive(activeColorIds, excludeId);
-      lastTwoColorsRef.current = [last2[last2.length - 1] ?? colorId, nextId].slice(-2);
-      setCurrentColorId(nextId);
+      const newNextId = randColorIdFromActive(activeColorIds, excludeId);
+      lastTwoColorsRef.current = [last2[last2.length - 1] ?? colorId, newNextId].slice(-2);
+      setCurrentColorId(nextColorId);
+      setNextColorId(newNextId);
     },
-    [gameOver, newColorsNotice, currentColorId, findTargetRow, checkAndPop]
+    [gameOver, newColorsNotice, currentColorId, nextColorId, findTargetRow, checkAndPop]
   );
+
+  const handleUndo = useCallback(() => {
+    if (!undoSnapshot || undoUsed) return;
+    setGrid(undoSnapshot.grid);
+    setCurrentColorId(undoSnapshot.currentColorId);
+    setNextColorId(undoSnapshot.nextColorId);
+    setScore(undoSnapshot.score);
+    scoreRef.current = undoSnapshot.score;
+    setUndoUsed(true);
+    setUndoSnapshot(null);
+    setPoppingCells(new Set());
+    setGravityMs(0);
+  }, [undoSnapshot, undoUsed]);
 
   // Проверка game over — всё поле заполнено (нет ни одной свободной ячейки)
   useEffect(() => {
@@ -416,7 +445,7 @@ export function useGameState() {
     }
   }, [grid, gameOver, score]);
 
-  // Разблокировка новых цветов и расширение поля
+  // Разблокировка новых цветов (поле больше не расширяется)
   useEffect(() => {
     const activeIds = getActiveColorIds(score);
     const newLen = activeIds.length;
@@ -431,18 +460,6 @@ export function useGameState() {
           setLitColorIds(new Set());
         }, 4000);
       }
-
-      // Расширяем поле: +1 столбец и +1 строка
-      const { cols: newCols, rows: newRows } = getGridSize(newLen);
-      setGridCols(newCols);
-      setGridRows(newRows);
-      setGrid((prev) => {
-        // Добавляем новый столбец (null) к каждой существующей строке
-        const withNewCol = prev.map((row) => [...row, null as Cell]);
-        // Добавляем новую строку снизу
-        const newRow = Array(newCols).fill(null) as Cell[];
-        return [...withNewCol, newRow];
-      });
     }
     prevActiveLenRef.current = newLen;
   }, [score]);
@@ -453,17 +470,24 @@ export function useGameState() {
     setGrid(emptyGrid(rows, cols));
     setGridCols(cols);
     setGridRows(rows);
-    setCurrentColorId(randColorIdFromActive(startIds));
+    const firstColor = randColorIdFromActive(startIds);
+    const secondColor = randColorIdFromActive(startIds);
+    setCurrentColorId(firstColor);
+    setNextColorId(secondColor);
     setScore(0);
     scoreRef.current = 0;
     setPoppingCells(new Set());
     setGameOver(false);
     setLastPoints(null);
+    setUndoSnapshot(null);
+    setUndoUsed(false);
     prevActiveLenRef.current = startIds.length;
     lastTwoColorsRef.current = [];
   };
 
   const activeColorIds = getActiveColorIds(score);
+  const canUndo = score >= 25 && !!undoSnapshot && !undoUsed;
+  const showNextColor = score >= 50;
 
   return {
     grid,
@@ -482,9 +506,13 @@ export function useGameState() {
     litColorIds,
     newColorsNotice,
     currentColorId,
+    nextColorId,
     activeColorIds,
     cellSize,
     handleColumnClick,
+    handleUndo,
+    canUndo,
+    showNextColor,
     restartGame,
   };
 }

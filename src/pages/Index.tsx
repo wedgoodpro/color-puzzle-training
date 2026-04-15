@@ -23,9 +23,13 @@ export default function Index() {
     litColorIds,
     newColorsNotice,
     currentColorId,
+    nextColorId,
     activeColorIds,
     cellSize,
     handleColumnClick,
+    handleUndo,
+    canUndo,
+    showNextColor,
     restartGame,
   } = useGameState();
 
@@ -41,6 +45,10 @@ export default function Index() {
             litColorIds={litColorIds}
             activeColorIds={activeColorIds}
             currentColorId={currentColorId}
+            nextColorId={nextColorId}
+            showNextColor={showNextColor}
+            canUndo={canUndo}
+            onUndo={handleUndo}
             score={score}
             bestScore={bestScore}
             scoreAnim={scoreAnim}

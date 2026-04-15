@@ -5,6 +5,10 @@ interface WheelPanelProps {
   litColorIds: Set<number>;
   activeColorIds: number[];
   currentColorId: number;
+  nextColorId: number;
+  showNextColor: boolean;
+  canUndo: boolean;
+  onUndo: () => void;
   score: number;
   bestScore: number;
   scoreAnim: boolean;
@@ -15,6 +19,10 @@ export default function WheelPanel({
   litColorIds,
   activeColorIds,
   currentColorId,
+  nextColorId,
+  showNextColor,
+  canUndo,
+  onUndo,
   score,
   bestScore,
   scoreAnim,
@@ -24,12 +32,16 @@ export default function WheelPanel({
   const R = wheelSize / 2 - 4;
   const innerR = R * 0.38;
   const sqSize = innerR * 0.85;
+  const nextSqSize = sqSize * 0.42;
   const currentColor = ITTEN_COLORS[currentColorId];
+  const nextColor = ITTEN_COLORS[nextColorId];
 
   return (
     <div className="relative" style={{ width: BOARD_W, height: wheelSize }}>
       <div className="absolute" style={{ left: (BOARD_W - wheelSize) / 2, top: 0 }}>
         <ColorWheel litColorIds={litColorIds} activeColorIds={new Set(activeColorIds)} size={wheelSize} />
+
+        {/* Текущий цвет */}
         <div
           className="absolute rounded-sm"
           style={{
@@ -44,6 +56,24 @@ export default function WheelPanel({
             opacity: litColorIds.size > 0 ? 0 : 1,
           }}
         />
+
+        {/* Следующий цвет — маленький квадратик справа от текущего */}
+        {showNextColor && (
+          <div
+            className="absolute rounded-sm"
+            style={{
+              width: nextSqSize,
+              height: nextSqSize,
+              top: "50%",
+              left: "50%",
+              transform: `translate(calc(-50% + ${sqSize * 0.72}px), calc(-50% - ${sqSize * 0.52}px))`,
+              backgroundColor: nextColor.hex,
+              boxShadow: `0 1px 8px ${nextColor.hex}88`,
+              opacity: litColorIds.size > 0 ? 0 : 1,
+              transition: "background-color 0.25s ease, opacity 0.25s ease",
+            }}
+          />
+        )}
       </div>
 
       {/* Очки — левый верхний угол */}
@@ -78,6 +108,28 @@ export default function WheelPanel({
         </div>
         <div className="font-mono" style={{ color: "#555", fontSize: 10 }}>очки</div>
       </div>
+
+      {/* Кнопка отмены хода — под очками */}
+      {canUndo && (
+        <button
+          onClick={onUndo}
+          className="absolute font-mono"
+          style={{
+            left: 0,
+            top: 52,
+            fontSize: 10,
+            color: "#aaa",
+            background: "none",
+            border: "1px solid #444",
+            borderRadius: 4,
+            padding: "2px 6px",
+            cursor: "pointer",
+            letterSpacing: "0.05em",
+          }}
+        >
+          ↩ отмена
+        </button>
+      )}
 
       {/* Рекорд — правый верхний угол */}
       <div className="absolute text-right" style={{ right: 0, top: 4 }}>
