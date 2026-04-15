@@ -515,15 +515,19 @@ export function useGameState() {
         }, noticeDelay);
       }
 
-      // Расширяем поле: +1 столбец и +1 строка
+      // Расширяем поле только если размер реально изменился
       const { cols: newCols, rows: newRows } = getGridSize(newLen);
-      setGridCols(newCols);
-      setGridRows(newRows);
-      setGrid((prev) => {
-        const withNewCol = prev.map((row) => [...row, null as Cell]);
-        const newRow = Array(newCols).fill(null) as Cell[];
-        return [...withNewCol, newRow];
-      });
+      const prevCols = gridColsRef.current;
+      const prevRows = gridRowsRef.current;
+      if (newCols !== prevCols || newRows !== prevRows) {
+        setGridCols(newCols);
+        setGridRows(newRows);
+        setGrid((prev) => {
+          const withNewCol = prev.map((row) => [...row, null as Cell]);
+          const newRow = Array(newCols).fill(null) as Cell[];
+          return [...withNewCol, newRow];
+        });
+      }
     }
     prevActiveLenRef.current = newLen;
   }, [score]);
