@@ -191,12 +191,14 @@ export function useGameState() {
           }
         }
 
-        // Пара
+        // Пара — только один ближайший сосед (снизу → сверху → справа → слева)
         const complement = getComplement(colorId);
-        const pairNeighbors = neighbors.filter((n) => n.colorId === complement);
-        if (pairNeighbors.length > 0) {
-          const cells: [number, number][] = [[row, col], ...pairNeighbors.map((n): [number, number] => [n.r, n.c])];
-          return { cells, points: POINTS_PAIR * pairNeighbors.length };
+        const pairDirs2 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        for (const [dr, dc] of pairDirs2) {
+          const nr = row + dr; const nc = col + dc;
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && g[nr][nc]?.colorId === complement) {
+            return { cells: [[row, col], [nr, nc]] as [number, number][], points: POINTS_PAIR };
+          }
         }
       }
     }
@@ -293,14 +295,16 @@ export function useGameState() {
         }
       }
 
-      // Приоритет 3: пара
+      // Приоритет 3: пара — исчезает только один ближайший сосед (снизу → сверху → справа → слева)
       if (toRemove.length === 0) {
         const complement = getComplement(colorId);
-        for (const n of neighbors) {
-          if (n.colorId === complement) {
-            if (toRemove.length === 0) toRemove.push([row, col]);
-            toRemove.push([n.r, n.c]);
-            points += POINTS_PAIR;
+        const pairDirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        for (const [dr, dc] of pairDirs) {
+          const nr = row + dr; const nc = col + dc;
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && g[nr][nc]?.colorId === complement) {
+            toRemove.push([row, col], [nr, nc]);
+            points = POINTS_PAIR;
+            break;
           }
         }
       }
