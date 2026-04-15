@@ -44,14 +44,34 @@ export default function WheelPanel({
   const R = wheelSize / 2 - 4;
   const innerR = R * 0.38;
   const sqSize = innerR * 0.85;
-  const nextSqSize = sqSize * 0.42;
   const currentColor = ITTEN_COLORS[currentColorId];
   const nextColor = ITTEN_COLORS[nextColorId];
+  // Смещение следующего квадрата — выглядывает снизу-справа
+  const nextOffset = sqSize * 0.28;
 
   return (
     <div className="relative" style={{ width: boardPx, height: wheelSize }}>
       <div className="absolute" style={{ left: (boardPx - wheelSize) / 2, top: 0 }}>
         <ColorWheel litColorIds={litColorIds} activeColorIds={new Set(activeColorIds)} size={wheelSize} />
+
+        {/* Следующий цвет — под основным, выглядывает снизу-справа */}
+        {showNextColor && (
+          <div
+            className="absolute rounded-sm"
+            onClick={swapUnlocked && litColorIds.size === 0 ? onSwap : undefined}
+            style={{
+              width: sqSize,
+              height: sqSize,
+              top: "50%",
+              left: "50%",
+              transform: `translate(calc(-50% + ${nextOffset}px), calc(-50% + ${nextOffset}px))`,
+              backgroundColor: nextColor.hex,
+              opacity: litColorIds.size > 0 ? 0 : 0.85,
+              transition: "background-color 0.25s ease, opacity 0.25s ease",
+              cursor: swapUnlocked ? "pointer" : "default",
+            }}
+          />
+        )}
 
         {/* Текущий цвет */}
         <div
@@ -67,31 +87,29 @@ export default function WheelPanel({
             transition: "background-color 0.25s ease, opacity 0.25s ease",
             opacity: litColorIds.size > 0 ? 0 : 1,
             cursor: swapUnlocked ? "pointer" : "default",
-            boxShadow: swapUnlocked ? `0 0 0 2px ${currentColor.hex}55, 0 0 10px ${currentColor.hex}44` : undefined,
           }}
-        />
-
-        {/* Следующий цвет — маленький квадратик справа от текущего */}
-        {showNextColor && (
-          <div
-            className="absolute rounded-sm"
-            onClick={swapUnlocked && litColorIds.size === 0 ? onSwap : undefined}
-            style={{
-              width: nextSqSize,
-              height: nextSqSize,
-              top: "50%",
-              left: "50%",
-              transform: `translate(calc(-50% + ${sqSize * 0.72}px), calc(-50% - ${sqSize * 0.52}px))`,
-              backgroundColor: nextColor.hex,
-              boxShadow: swapUnlocked
-                ? `0 0 0 2px ${nextColor.hex}88, 0 0 10px ${nextColor.hex}66`
-                : `0 1px 8px ${nextColor.hex}88`,
-              opacity: litColorIds.size > 0 ? 0 : 1,
-              transition: "background-color 0.25s ease, opacity 0.25s ease",
-              cursor: swapUnlocked ? "pointer" : "default",
-            }}
-          />
-        )}
+        >
+          {/* Иконка свапа */}
+          {swapUnlocked && litColorIds.size === 0 && (
+            <span
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: sqSize * 0.38,
+                opacity: 0.22,
+                color: "#fff",
+                pointerEvents: "none",
+                userSelect: "none",
+                lineHeight: 1,
+              }}
+            >
+              ↻
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Очки — левый верхний угол */}
