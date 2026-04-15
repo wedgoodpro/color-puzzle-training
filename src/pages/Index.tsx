@@ -1,14 +1,11 @@
-import { useRef } from "react";
 import GameBoard from "@/game/GameBoard";
 import { GameOverModal } from "@/game/GameOverlay";
-import { BG, GAP, ITTEN_COLORS } from "@/game/constants";
+import { BG } from "@/game/constants";
 import WheelPanel from "@/game/WheelPanel";
 import NewColorsOverlay from "@/game/NewColorsOverlay";
 import { useGameState } from "@/game/useGameState";
 
 export default function Index() {
-  const boardRef = useRef<HTMLDivElement>(null);
-
   const {
     grid,
     gridCols,
@@ -17,7 +14,6 @@ export default function Index() {
     bestScore,
     scoreAnim,
     lastPoints,
-    flyingTile,
     poppingCells,
     particles,
     gameOver,
@@ -30,18 +26,7 @@ export default function Index() {
     cellSize,
     handleColumnClick,
     restartGame,
-    getFlyingY,
   } = useGameState();
-
-  // Вычисляем fixed-координаты летящего блока
-  const getFlyingFixed = () => {
-    if (!flyingTile || !boardRef.current) return null;
-    const rect = boardRef.current.getBoundingClientRect();
-    const x = rect.left + flyingTile.col * (cellSize + GAP);
-    const y = rect.top + getFlyingY(flyingTile);
-    return { x, y };
-  };
-  const flyingFixed = getFlyingFixed();
 
   return (
     <div
@@ -67,33 +52,16 @@ export default function Index() {
               cols={gridCols}
               rows={gridRows}
               cellSize={cellSize}
-              flyingTile={flyingTile}
+              flyingTile={null}
               particles={particles}
               poppingCells={poppingCells}
               hoverCol={hoverCol}
-              getFlyingY={getFlyingY}
+              getFlyingY={() => 0}
               onColumnClick={handleColumnClick}
               onColumnHover={setHoverCol}
-              boardRef={boardRef}
             />
             <NewColorsOverlay notice={newColorsNotice} />
           </div>
-
-          {/* Летящий блок в fixed-позиции — виден поверх всего, анимируется от низа экрана */}
-          {flyingTile && flyingFixed && (
-            <div
-              className="fixed rounded-sm pointer-events-none"
-              style={{
-                left: flyingFixed.x,
-                top: flyingFixed.y,
-                width: cellSize,
-                height: cellSize,
-                backgroundColor: ITTEN_COLORS[flyingTile.colorId].hex,
-                boxShadow: `0 2px 20px ${ITTEN_COLORS[flyingTile.colorId].hex}88`,
-                zIndex: 50,
-              }}
-            />
-          )}
 
           <div className="flex flex-col items-center gap-6 w-full pb-2">
             <a
