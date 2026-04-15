@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { hapticDrop, hapticPair, hapticTriad, hapticTetrad } from "@/game/haptics";
 import {
   ITTEN_COLORS, COLOR_LEVELS,
   POINTS_PAIR, POINTS_TRIAD, POINTS_TETRAD,
@@ -338,9 +337,6 @@ export function useGameState() {
       const runCascade = (currentGrid: Grid, removeCells: [number, number][], pts: number) => {
         const { popDelay, gravMs } = getTimings(pts);
 
-        if (pts >= POINTS_TETRAD) hapticTetrad();
-        else if (pts >= POINTS_TRIAD) hapticTriad();
-        else hapticPair();
         setPoppingCells(new Set(removeCells.map(([r, c]) => `${r}-${c}`)));
         spawnParticles(removeCells, currentGrid, cs);
         const removedColors = new Set(removeCells.map(([r, c]) => currentGrid[r][c]!.colorId));
@@ -456,7 +452,6 @@ export function useGameState() {
         if (afterGravity[r][col] !== null) filledCount++;
       }
       const newRow = filledCount - 1;
-      hapticDrop();
       setGrid(afterGravity);
       // Убираем dropFrom после анимации и проверяем совпадения
       setTimeout(() => {
