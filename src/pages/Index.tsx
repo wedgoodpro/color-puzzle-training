@@ -140,7 +140,7 @@ export default function Index() {
         }
         @keyframes review-pulse {
           0%   { transform: scale(1); }
-          45%  { transform: scale(1.2); }
+          45%  { transform: scale(0.7); }
           100% { transform: scale(1); }
         }
       `}</style>
