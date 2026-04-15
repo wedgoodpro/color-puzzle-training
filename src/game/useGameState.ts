@@ -43,6 +43,7 @@ export function useGameState() {
   const [hoverCol, setHoverCol] = useState<number | null>(null);
   const [litColorIds, setLitColorIds] = useState<Set<number>>(new Set());
   const [reviewPending, setReviewPending] = useState(false);
+  const [reviewCells, setReviewCells] = useState<Set<string>>(new Set());
   const reviewResolveRef = useRef<(() => void) | null>(null);
   const [newColorsNotice, setNewColorsNotice] = useState<{ names: string[]; ids: number[] } | null>(null);
   const prevActiveLenRef = useRef(initialActiveIds.length);
@@ -347,6 +348,7 @@ export function useGameState() {
 
         const proceed = () => {
           setReviewPending(false);
+          setReviewCells(new Set());
           reviewResolveRef.current = null;
           setLitColorIds(new Set());
 
@@ -419,11 +421,11 @@ export function useGameState() {
         };
 
         if (isTriadOrTetrad) {
-          // Ждём popDelay (квадраты анимируются), потом показываем паузу — ждём тапа
-          setTimeout(() => {
-            setReviewPending(true);
-            reviewResolveRef.current = proceed;
-          }, popDelay);
+          // Сразу ставим паузу — квадраты видны с pop-анимацией, ждём тапа
+          const cellKeys = new Set(removeCells.map(([r, c]) => `${r}-${c}`));
+          setReviewCells(cellKeys);
+          setReviewPending(true);
+          reviewResolveRef.current = proceed;
         } else {
           // Пара: обычная автоматическая анимация
           setTimeout(() => setLitColorIds(new Set()), gravMs + popDelay);
@@ -632,6 +634,7 @@ export function useGameState() {
     showNextColor,
     restartGame,
     reviewPending,
+    reviewCells,
     handleReviewTap,
   };
 }

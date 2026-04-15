@@ -33,6 +33,7 @@ export default function Index() {
     showNextColor,
     restartGame,
     reviewPending,
+    reviewCells,
     handleReviewTap,
   } = useGameState();
 
@@ -70,6 +71,7 @@ export default function Index() {
               poppingCells={poppingCells}
               gravityMs={gravityMs}
               hoverCol={hoverCol}
+              reviewCells={reviewCells}
               getFlyingY={() => 0}
               onColumnClick={handleColumnClick}
               onColumnHover={setHoverCol}
@@ -135,6 +137,11 @@ export default function Index() {
         @keyframes slideUp {
           0%   { transform: translateY(var(--drop, 0px)); }
           100% { transform: translateY(0); }
+        }
+        @keyframes review-pulse {
+          0%   { transform: scale(1);    box-shadow: 0 0 0px  0px  var(--glow); opacity: 1; }
+          45%  { transform: scale(1.2);  box-shadow: 0 0 22px 8px  var(--glow); opacity: 0.9; }
+          100% { transform: scale(1);    box-shadow: 0 0 0px  0px  var(--glow); opacity: 1; }
         }
       `}</style>
     </div>

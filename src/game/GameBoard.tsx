@@ -15,6 +15,7 @@ interface GameBoardProps {
   poppingCells: Set<string>;
   gravityMs: number;
   hoverCol: number | null;
+  reviewCells?: Set<string>;
   getFlyingY: (ft: FlyingTile) => number;
   onColumnClick: (col: number) => void;
   onColumnHover: (col: number | null) => void;
@@ -30,6 +31,7 @@ export default function GameBoard({
   poppingCells,
   gravityMs,
   hoverCol,
+  reviewCells,
   onColumnClick,
   onColumnHover,
   boardRef,
@@ -90,13 +92,18 @@ export default function GameBoard({
       {colorCells.map(({ key, ci, ri, colorId, isPopping, dropFrom }) => {
         const top = ri * (cellSize + GAP);
         const dur = gravityMs > 0 ? gravityMs : 300;
+        const cellKey = `${ri}-${ci}`;
+        const isReview = !!reviewCells?.has(cellKey);
         let anim: string | undefined;
-        if (isPopping) {
+        if (isReview) {
+          anim = "review-pulse 0.7s ease-in-out infinite";
+        } else if (isPopping) {
           anim = "pop 0.55s cubic-bezier(0.36,0.07,0.19,0.97) forwards";
         } else if (dropFrom !== undefined) {
           anim = `slideUp ${dur}ms cubic-bezier(0.34,1.4,0.64,1) forwards`;
         }
 
+        const hex = ITTEN_COLORS[colorId].hex;
         return (
           <div
             key={key}
@@ -106,10 +113,11 @@ export default function GameBoard({
               top,
               width: cellSize,
               height: cellSize,
-              backgroundColor: ITTEN_COLORS[colorId].hex,
+              backgroundColor: hex,
               animation: anim,
               ["--drop" as string]: dropFrom !== undefined ? `${dropFrom}px` : "0px",
-              zIndex: 2,
+              ["--glow" as string]: hex,
+              zIndex: isReview ? 3 : 2,
             }}
           />
         );
