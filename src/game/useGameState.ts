@@ -196,14 +196,18 @@ export function useGameState() {
           }
         }
 
-        // Пара — только один ближайший сосед (снизу → сверху → справа → слева)
+        // Пара — все соседи комплементарного цвета
         const complement = getComplement(colorId);
         const pairDirs2 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        const pairCells: [number, number][] = [];
         for (const [dr, dc] of pairDirs2) {
           const nr = row + dr; const nc = col + dc;
           if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && g[nr][nc]?.colorId === complement) {
-            return { cells: [[row, col], [nr, nc]] as [number, number][], points: POINTS_PAIR };
+            pairCells.push([nr, nc]);
           }
+        }
+        if (pairCells.length > 0) {
+          return { cells: [[row, col], ...pairCells] as [number, number][], points: POINTS_PAIR * pairCells.length };
         }
       }
     }
@@ -300,16 +304,16 @@ export function useGameState() {
         }
       }
 
-      // Приоритет 3: пара — исчезает только один ближайший сосед (снизу → сверху → справа → слева)
+      // Приоритет 3: пара — исчезают ВСЕ соседи комплементарного цвета
       if (toRemove.length === 0) {
         const complement = getComplement(colorId);
         const pairDirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
         for (const [dr, dc] of pairDirs) {
           const nr = row + dr; const nc = col + dc;
           if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && g[nr][nc]?.colorId === complement) {
-            toRemove.push([row, col], [nr, nc]);
-            points = POINTS_PAIR;
-            break;
+            if (toRemove.length === 0) toRemove.push([row, col]);
+            toRemove.push([nr, nc]);
+            points += POINTS_PAIR;
           }
         }
       }
