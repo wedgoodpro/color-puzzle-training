@@ -109,7 +109,7 @@ export default function Index() {
   const [gameOver, setGameOver] = useState(false);
   const [hoverCol, setHoverCol] = useState<number | null>(null);
   const [litColorIds, setLitColorIds] = useState<Set<number>>(new Set());
-  const [newColorsNotice, setNewColorsNotice] = useState<string | null>(null);
+  const [newColorsNotice, setNewColorsNotice] = useState<{ names: string[]; ids: number[] } | null>(null);
   const prevActiveLenRef = useRef(initialActiveIds.length);
   const lastTwoColorsRef = useRef<number[]>([]);
 
@@ -242,7 +242,7 @@ export default function Index() {
 
   const handleColumnClick = useCallback(
     (col: number) => {
-      if (flyingTile || gameOver) return;
+      if (flyingTile || gameOver || newColorsNotice) return;
       const targetRow = findTargetRow(col, grid, gridRows);
       if (targetRow === -1) return;
 
@@ -277,7 +277,7 @@ export default function Index() {
 
       animFrameRef.current = requestAnimationFrame(animate);
     },
-    [flyingTile, gameOver, grid, gridRows, gridCols, currentColorId, findTargetRow, checkAndPop]
+    [flyingTile, gameOver, newColorsNotice, grid, gridRows, gridCols, currentColorId, findTargetRow, checkAndPop]
   );
 
   // Проверка game over — последняя строка заполнена
@@ -300,9 +300,13 @@ export default function Index() {
     if (newLen > prevActiveLenRef.current) {
       const added = COLOR_LEVELS.find((l) => l.threshold === score);
       if (added) {
-        const names = added.ids.map((id) => ITTEN_COLORS[id].name).join(" и ");
-        setNewColorsNotice(`+2 новых цвета: ${names}!`);
-        setTimeout(() => setNewColorsNotice(null), 5000);
+        const names = added.ids.map((id) => ITTEN_COLORS[id].name);
+        setNewColorsNotice({ names, ids: added.ids });
+        setLitColorIds(new Set(added.ids));
+        setTimeout(() => {
+          setNewColorsNotice(null);
+          setLitColorIds(new Set());
+        }, 4000);
       }
 
       // Расширяем поле: +1 столбец и +1 строка
@@ -431,29 +435,63 @@ export default function Index() {
               );
             })()}
 
-            {/* Уведомление о новых цветах */}
-            {newColorsNotice && (
-              <div
-                className="font-mono text-xs text-center animate-fade-in"
-                style={{ color: "#aaa", letterSpacing: "0.05em", marginTop: -8 }}
-              >
-                {newColorsNotice}
-              </div>
-            )}
+            <div className="relative">
+              <GameBoard
+                grid={grid}
+                cols={gridCols}
+                rows={gridRows}
+                cellSize={cellSize}
+                flyingTile={flyingTile}
+                particles={particles}
+                poppingCells={poppingCells}
+                hoverCol={hoverCol}
+                getFlyingY={getFlyingY}
+                onColumnClick={handleColumnClick}
+                onColumnHover={setHoverCol}
+              />
 
-            <GameBoard
-              grid={grid}
-              cols={gridCols}
-              rows={gridRows}
-              cellSize={cellSize}
-              flyingTile={flyingTile}
-              particles={particles}
-              poppingCells={poppingCells}
-              hoverCol={hoverCol}
-              getFlyingY={getFlyingY}
-              onColumnClick={handleColumnClick}
-              onColumnHover={setHoverCol}
-            />
+              {/* Оверлей новых цветов поверх поля */}
+              {newColorsNotice && (
+                <div
+                  className="absolute inset-0 flex flex-col items-center justify-center"
+                  style={{
+                    background: "rgba(30,30,30,0.82)",
+                    backdropFilter: "blur(2px)",
+                    borderRadius: 6,
+                    animation: "fade-in-overlay 0.3s ease",
+                    zIndex: 30,
+                  }}
+                >
+                  <div
+                    className="font-mono font-bold text-center"
+                    style={{ fontSize: 13, color: "#666", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 10 }}
+                  >
+                    новые цвета
+                  </div>
+                  {newColorsNotice.ids.map((id) => (
+                    <div
+                      key={id}
+                      className="font-mono font-bold text-center"
+                      style={{
+                        fontSize: 22,
+                        color: ITTEN_COLORS[id].hex,
+                        textShadow: `0 0 20px ${ITTEN_COLORS[id].hex}`,
+                        marginBottom: 4,
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      {ITTEN_COLORS[id].name}
+                    </div>
+                  ))}
+                  <div
+                    className="font-mono text-center"
+                    style={{ fontSize: 11, color: "#444", marginTop: 12, letterSpacing: "0.1em" }}
+                  >
+                    поле расширилось
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="flex flex-col items-center gap-6 w-full pb-2">
               <a
@@ -481,6 +519,10 @@ export default function Index() {
         @keyframes float-up {
           0%   { opacity: 1; transform: translateY(0); }
           100% { opacity: 0; transform: translateY(-40px); }
+        }
+        @keyframes fade-in-overlay {
+          0%   { opacity: 0; transform: scale(0.97); }
+          100% { opacity: 1; transform: scale(1); }
         }
       `}</style>
     </div>
