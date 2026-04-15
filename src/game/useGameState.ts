@@ -71,14 +71,14 @@ export function useGameState() {
       const cellColor = g[r][c]?.colorId ?? 0;
       const cx = c * (cs + GAP) + cs / 2;
       const cy = r * (cs + GAP) + cs / 2;
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 10; i++) {
         newParticles.push({
           id: ++particleIdRef.current,
           x: cx,
           y: cy,
           color: ITTEN_COLORS[cellColor].hex,
-          angle: (360 / 8) * i + Math.random() * 15 - 7,
-          dist: 30 + Math.random() * 35,
+          angle: (360 / 10) * i + Math.random() * 18 - 9,
+          dist: 40 + Math.random() * 50,
         });
       }
     });
@@ -86,7 +86,7 @@ export function useGameState() {
     setTimeout(() => {
       const ids = new Set(newParticles.map((p) => p.id));
       setParticles((prev) => prev.filter((p) => !ids.has(p.id)));
-    }, 600);
+    }, 850);
   }, []);
 
   // Чистая функция: притягивает кубики к верху по каждому столбцу
@@ -328,9 +328,9 @@ export function useGameState() {
 
       // Длительность гравитации и задержка зависят от типа совпадения
       const getTimings = (pts: number) => {
-        if (pts >= POINTS_TETRAD) return { popDelay: 500, gravMs: 700 };
-        if (pts >= POINTS_TRIAD)  return { popDelay: 380, gravMs: 500 };
-        return                           { popDelay: 260, gravMs: 300 };
+        if (pts >= POINTS_TETRAD) return { popDelay: 750, gravMs: 600 };
+        if (pts >= POINTS_TRIAD)  return { popDelay: 600, gravMs: 480 };
+        return                           { popDelay: 450, gravMs: 360 };
       };
 
       // Запускаем каскад: анимация → удаление → гравитация → повтор

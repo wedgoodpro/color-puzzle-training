@@ -92,7 +92,7 @@ export default function GameBoard({
         const dur = gravityMs > 0 ? gravityMs : 300;
         let anim: string | undefined;
         if (isPopping) {
-          anim = "pop 0.32s cubic-bezier(0.36,0.07,0.19,0.97) forwards";
+          anim = "pop 0.55s cubic-bezier(0.36,0.07,0.19,0.97) forwards";
         } else if (dropFrom !== undefined) {
           anim = `slideUp ${dur}ms cubic-bezier(0.34,1.4,0.64,1) forwards`;
         }
@@ -125,12 +125,12 @@ export default function GameBoard({
             key={p.id}
             className="absolute pointer-events-none rounded-full"
             style={{
-              left: p.x - 5,
-              top: p.y - 5,
-              width: 10,
-              height: 10,
+              left: p.x - 6,
+              top: p.y - 6,
+              width: 12,
+              height: 12,
               backgroundColor: p.color,
-              animation: "particle-burst 0.5s cubic-bezier(0.2,0.8,0.4,1) forwards",
+              animation: "particle-burst 0.75s cubic-bezier(0.15,0.85,0.35,1) forwards",
               ["--tx" as string]: `${tx}px`,
               ["--ty" as string]: `${ty}px`,
               zIndex: 20,
