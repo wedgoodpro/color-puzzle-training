@@ -472,8 +472,8 @@ export function useGameState() {
 
   const getFlyingY = (ft: FlyingTile) => {
     const p = easeOutCubic(ft.progress);
-    const startY = BOARD_H + cellSize * 2;
     const endY = ft.targetRow * (cellSize + GAP);
+    const startY = endY + BOARD_H * 0.8;
     return startY + (endY - startY) * p;
   };
 
