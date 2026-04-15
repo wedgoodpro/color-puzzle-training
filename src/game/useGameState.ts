@@ -32,7 +32,7 @@ export function useGameState() {
   const [score, setScore] = useState(0);
   const scoreRef = useRef(0);
   const [currentColorId, setCurrentColorId] = useState<number>(() => randColorIdFromActive(initialActiveIds));
-  const [nextColorId, setNextColorId] = useState<number>(() => randColorIdFromActive(initialActiveIds));
+  const [nextColorId, setNextColorId] = useState<number>(() => randColorIdFromActive(initialActiveIds, randColorIdFromActive(initialActiveIds)));
   const [bestScore, setBestScore] = useState(getBestScore());
   const [scoreAnim, setScoreAnim] = useState(false);
   const [lastPoints, setLastPoints] = useState<number | null>(null);
@@ -447,11 +447,39 @@ export function useGameState() {
       }, 320);
 
       // Следующий цвет становится текущим, генерируем новый следующий
-      const last2 = lastTwoColorsRef.current;
-      const excludeId = last2.length === 2 && last2[0] === last2[1] ? last2[0] : undefined;
-      const newNextId = randColorIdFromActive(activeColorIds, excludeId);
-      lastTwoColorsRef.current = [last2[last2.length - 1] ?? colorId, newNextId].slice(-2);
-      setCurrentColorId(nextColorId);
+      // Запоминаем последние 4 реально упавших цвета
+      const last4 = [...lastTwoColorsRef.current, colorId].slice(-4);
+      lastTwoColorsRef.current = last4;
+
+      // Запрет 3 подряд одинаковых: если 2 последних = colorId, исключаем его из следующего
+      const last2same = last4.length >= 2 && last4[last4.length - 1] === last4[last4.length - 2];
+      const excludeFor3 = last2same ? colorId : undefined;
+
+      // Борьба с "2 цвета долго": если из последних 4 используется только 2 уникальных цвета
+      // при наличии >2 активных — форсируем третий цвет
+      const uniqueInLast4 = new Set(last4);
+      const forceNewColor =
+        activeColorIds.length > 2 &&
+        last4.length === 4 &&
+        uniqueInLast4.size <= 2;
+
+      let safeNextColorId = nextColorId;
+      if (activeColorIds.length > 2 && nextColorId === colorId && last2same) {
+        safeNextColorId = randColorIdFromActive(activeColorIds, colorId);
+      }
+
+      let newNextId: number;
+      if (forceNewColor) {
+        // Принудительно выбираем цвет НЕ из тех 2, что были последние 4 хода
+        const pool = activeColorIds.filter((id) => !uniqueInLast4.has(id));
+        newNextId = pool.length > 0
+          ? pool[Math.floor(Math.random() * pool.length)]
+          : randColorIdFromActive(activeColorIds, excludeFor3);
+      } else {
+        newNextId = randColorIdFromActive(activeColorIds, excludeFor3);
+      }
+
+      setCurrentColorId(safeNextColorId);
       setNextColorId(newNextId);
     },
     [gameOver, newColorsNotice, currentColorId, nextColorId, findTargetRow, checkAndPop]
@@ -519,7 +547,7 @@ export function useGameState() {
     setGridCols(cols);
     setGridRows(rows);
     const firstColor = randColorIdFromActive(startIds);
-    const secondColor = randColorIdFromActive(startIds);
+    const secondColor = randColorIdFromActive(startIds, firstColor);
     setCurrentColorId(firstColor);
     setNextColorId(secondColor);
     setScore(0);
