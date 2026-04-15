@@ -91,7 +91,7 @@ export default function GameBoard({
         if (isPopping) {
           anim = "pop 0.32s cubic-bezier(0.36,0.07,0.19,0.97) forwards";
         } else if (dropFrom !== undefined) {
-          anim = `slideUp ${dur}ms cubic-bezier(0.25,0.46,0.45,0.94) forwards`;
+          anim = `slideUp ${dur}ms cubic-bezier(0.34,1.4,0.64,1) forwards`;
         }
 
         return (
