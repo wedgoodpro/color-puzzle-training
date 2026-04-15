@@ -109,34 +109,36 @@ export default function WheelPanel({
         <div className="font-mono" style={{ color: "#555", fontSize: 10 }}>очки</div>
       </div>
 
-      {/* Кнопка отмены хода — под очками */}
-      {canUndo && (
-        <button
-          onClick={onUndo}
-          className="absolute font-mono"
-          style={{
-            left: 0,
-            top: 52,
-            fontSize: 10,
-            color: "#aaa",
-            background: "none",
-            border: "1px solid #444",
-            borderRadius: 4,
-            padding: "2px 6px",
-            cursor: "pointer",
-            letterSpacing: "0.05em",
-          }}
-        >
-          ↩ отмена
-        </button>
-      )}
-
       {/* Рекорд — правый верхний угол */}
       <div className="absolute text-right" style={{ right: 0, top: 4 }}>
         <div className="font-mono font-medium leading-none" style={{ fontSize: 24, color: "#4a4a4a" }}>
           {bestScore}
         </div>
         <div className="font-mono" style={{ color: "#555", fontSize: 10 }}>рекорд</div>
+      </div>
+
+      {/* Кнопка отмены — нижний правый угол, симметрично очкам */}
+      <div className="absolute text-right" style={{ right: 0, bottom: 4 }}>
+        {canUndo ? (
+          <button
+            onClick={onUndo}
+            className="font-mono font-medium leading-none block w-full text-right"
+            style={{
+              fontSize: 24,
+              color: "#aaa",
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              lineHeight: 1,
+            }}
+          >
+            ↩
+          </button>
+        ) : (
+          <div className="font-mono font-medium leading-none" style={{ fontSize: 24, color: "#2e2e2e" }}>↩</div>
+        )}
+        <div className="font-mono" style={{ color: "#555", fontSize: 10 }}>отмена</div>
       </div>
     </div>
   );

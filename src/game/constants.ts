@@ -48,7 +48,8 @@ export const BASE_ROWS = 5;
 export const BOARD_PX = 330;
 
 export const getGridSize = (activeCount: number): { cols: number; rows: number } => {
-  const extraPairs = Math.floor((activeCount - 6) / 2);
+  // Поле растёт только один раз: при 8 цветах (25 очков) → 6×6, дальше не растёт
+  const extraPairs = Math.min(Math.floor((activeCount - 6) / 2), 1);
   return {
     cols: BASE_COLS + extraPairs,
     rows: BASE_ROWS + extraPairs,
