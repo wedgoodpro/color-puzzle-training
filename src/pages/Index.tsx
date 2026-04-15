@@ -103,6 +103,10 @@ export default function Index() {
           0%   { opacity: 0; transform: scale(0.97); }
           100% { opacity: 1; transform: scale(1); }
         }
+        @keyframes slideUp {
+          0%   { transform: translateY(var(--drop, 0px)); }
+          100% { transform: translateY(0); }
+        }
       `}</style>
     </div>
   );

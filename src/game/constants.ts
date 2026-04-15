@@ -76,7 +76,7 @@ export const CELL_EMPTY = "#363636";
 export const CELL_EMPTY_HOVER = "#404040";
 export const WHEEL_COUNT = ITTEN_COLORS.length;
 
-export type Cell = { colorId: number } | null;
+export type Cell = { colorId: number; dropFrom?: number } | null;
 export type Grid = Cell[][];
 
 export interface FlyingTile {

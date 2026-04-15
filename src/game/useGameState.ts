@@ -344,30 +344,48 @@ export function useGameState() {
           removeCells.forEach(([r, c]) => { afterRemove[r][c] = null; });
           setPoppingCells(new Set());
 
-          // Показываем grid с дырками, включаем transition для плавной гравитации
-          setGravityMs(gravMs);
-          setGrid(afterRemove);
-
-          // Через 1 кадр применяем гравитацию — CSS transition её анимирует
-          setTimeout(() => {
-            const afterGravity = applyGravity(afterRemove, rows, cols);
-            setGrid(afterGravity);
-            setScore((s) => {
-              const newScore = s + pts;
-              scoreRef.current = newScore;
-              return newScore;
-            });
-            triggerScoreAnim(pts);
-
-            // После завершения гравитации сбрасываем transition и ищем новые совпадения
-            setTimeout(() => {
-              setGravityMs(0);
-              const nextMatch = findAnyMatch(afterGravity, rows, cols);
-              if (nextMatch) {
-                runCascade(afterGravity, nextMatch.cells, nextMatch.points);
+          // Применяем гравитацию и считаем dropFrom для каждой сдвинувшейся ячейки
+          const afterGravity = applyGravity(afterRemove, rows, cols);
+          const cs2 = getCellSize(cols);
+          for (let c = 0; c < cols; c++) {
+            // Собираем старые позиции ячеек (до удаления) по colorId
+            const oldPositions: number[] = [];
+            for (let r = 0; r < rows; r++) {
+              if (afterRemove[r][c] !== null) oldPositions.push(r);
+            }
+            // Новые позиции после гравитации
+            let newIdx = 0;
+            for (let r = 0; r < rows; r++) {
+              if (afterGravity[r][c] !== null) {
+                const oldR = oldPositions[newIdx];
+                if (oldR !== undefined && oldR !== r) {
+                  // ячейка сдвинулась с oldR на r (вверх), dropFrom = разница в пикселях
+                  afterGravity[r][c] = { ...afterGravity[r][c]!, dropFrom: (oldR - r) * (cs2 + GAP) };
+                }
+                newIdx++;
               }
-            }, gravMs + 50);
-          }, 32);
+            }
+          }
+
+          setGrid(afterGravity);
+          setScore((s) => {
+            const newScore = s + pts;
+            scoreRef.current = newScore;
+            return newScore;
+          });
+          triggerScoreAnim(pts);
+
+          // После анимации убираем dropFrom и ищем новые совпадения
+          setTimeout(() => {
+            const cleanGrid = afterGravity.map((r) =>
+              r.map((cell) => cell ? { colorId: cell.colorId } : null)
+            ) as Grid;
+            setGrid(cleanGrid);
+            const nextMatch = findAnyMatch(cleanGrid, rows, cols);
+            if (nextMatch) {
+              runCascade(cleanGrid, nextMatch.cells, nextMatch.points);
+            }
+          }, gravMs + 50);
         }, popDelay);
       };
 
@@ -398,35 +416,25 @@ export function useGameState() {
       setUndoUsed(false);
 
       const currentGrid = gridRef.current.map((r) => [...r]) as Grid;
-      currentGrid[targetRow][col] = { colorId };
+      // dropFrom = сколько пикселей кубик пролетит снизу вверх (от низа поля до целевой строки)
+      const dropFrom = (rows - 1 - targetRow) * (getCellSize(cols) + GAP) + getCellSize(cols);
+      currentGrid[targetRow][col] = { colorId, dropFrom };
       const afterGravity = applyGravity(currentGrid, rows, cols);
       let filledCount = 0;
       for (let r = 0; r < rows; r++) {
         if (afterGravity[r][col] !== null) filledCount++;
       }
       const newRow = filledCount - 1;
-
-      // Если кубик падает выше нижней строки — анимируем подъём через двухшаговый рендер
-      const bottomFree = gridRef.current[rows - 1][col] === null;
-      if (bottomFree && targetRow < rows - 1) {
-        // Шаг 1: рендерим кубик внизу
-        const gridBottom = gridRef.current.map((r) => [...r]) as Grid;
-        gridBottom[rows - 1][col] = { colorId };
-        setGravityMs(280);
-        setGrid(gridBottom);
-        // Шаг 2: через кадр — финальная позиция, transition анимирует движение вверх
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          setGrid(afterGravity);
-          setTimeout(() => {
-            setGravityMs(0);
-            checkAndPop(afterGravity, newRow, col, colorId, rows, cols, cs);
-          }, 300);
-        }));
-      } else {
-        // Нижняя строка занята — ставим сразу без анимации подъёма
-        setGrid(afterGravity);
+      setGrid(afterGravity);
+      // Убираем dropFrom после анимации и проверяем совпадения
+      setTimeout(() => {
+        setGrid((prev) => {
+          const next = prev.map((r) => [...r]) as Grid;
+          if (next[newRow][col]) next[newRow][col] = { colorId };
+          return next;
+        });
         checkAndPop(afterGravity, newRow, col, colorId, rows, cols, cs);
-      }
+      }, 320);
 
       // Следующий цвет становится текущим, генерируем новый следующий
       const last2 = lastTwoColorsRef.current;

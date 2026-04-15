@@ -34,10 +34,11 @@ export default function GameBoard({
   onColumnHover,
   boardRef,
 }: GameBoardProps) {
-  // Для анимации гравитации: ключ цветной ячейки = col-slotIndex (порядок в столбце снизу вверх).
-  // React сохраняет DOM-узел при том же ключе → CSS transition top анимирует движение.
-  // Слоты считаются от 0 = верхний занятый, max = нижний занятый.
-  const colorCells: { key: string; ci: number; ri: number; colorId: number; isPopping: boolean }[] = [];
+  const colorCells: {
+    key: string; ci: number; ri: number;
+    colorId: number; isPopping: boolean; dropFrom?: number;
+  }[] = [];
+
   for (let ci = 0; ci < cols; ci++) {
     let slotIdx = 0;
     for (let ri = 0; ri < rows; ri++) {
@@ -45,10 +46,10 @@ export default function GameBoard({
       if (cell !== null) {
         colorCells.push({
           key: `c${ci}s${slotIdx}`,
-          ci,
-          ri,
+          ci, ri,
           colorId: cell.colorId,
           isPopping: poppingCells.has(`${ri}-${ci}`),
+          dropFrom: cell.dropFrom,
         });
         slotIdx++;
       }
@@ -61,7 +62,7 @@ export default function GameBoard({
       className="relative overflow-visible"
       style={{ width: BOARD_W, height: BOARD_H }}
     >
-      {/* Фоновые пустые ячейки (кликабельны) */}
+      {/* Фоновые ячейки */}
       {Array.from({ length: rows }, (_, ri) =>
         Array.from({ length: cols }, (_, ci) => (
           <div
@@ -82,27 +83,34 @@ export default function GameBoard({
         ))
       )}
 
-      {/* Цветные ячейки — стабильные ключи, transition top анимирует гравитацию */}
-      {colorCells.map(({ key, ci, ri, colorId, isPopping }) => (
-        <div
-          key={key}
-          className="absolute pointer-events-none rounded-sm"
-          style={{
-            left: ci * (cellSize + GAP),
-            top: ri * (cellSize + GAP),
-            width: cellSize,
-            height: cellSize,
-            backgroundColor: ITTEN_COLORS[colorId].hex,
-            animation: isPopping
-              ? "pop 0.32s cubic-bezier(0.36,0.07,0.19,0.97) forwards"
-              : undefined,
-            transition: gravityMs > 0 && !isPopping
-              ? `top ${gravityMs}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
-              : undefined,
-            zIndex: 2,
-          }}
-        />
-      ))}
+      {/* Цветные ячейки */}
+      {colorCells.map(({ key, ci, ri, colorId, isPopping, dropFrom }) => {
+        const top = ri * (cellSize + GAP);
+        const dur = gravityMs > 0 ? gravityMs : 300;
+        let anim: string | undefined;
+        if (isPopping) {
+          anim = "pop 0.32s cubic-bezier(0.36,0.07,0.19,0.97) forwards";
+        } else if (dropFrom !== undefined) {
+          anim = `slideUp ${dur}ms cubic-bezier(0.25,0.46,0.45,0.94) forwards`;
+        }
+
+        return (
+          <div
+            key={key}
+            className="absolute pointer-events-none rounded-sm"
+            style={{
+              left: ci * (cellSize + GAP),
+              top,
+              width: cellSize,
+              height: cellSize,
+              backgroundColor: ITTEN_COLORS[colorId].hex,
+              animation: anim,
+              ["--drop" as string]: dropFrom !== undefined ? `${dropFrom}px` : "0px",
+              zIndex: 2,
+            }}
+          />
+        );
+      })}
 
       {/* Particles */}
       {particles.map((p) => {
