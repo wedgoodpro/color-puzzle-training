@@ -26,6 +26,7 @@ export default function Index() {
     nextColorId,
     activeColorIds,
     cellSize,
+    boardPx,
     handleColumnClick,
     handleUndo,
     canUndo,
@@ -58,6 +59,7 @@ export default function Index() {
             bestScore={bestScore}
             scoreAnim={scoreAnim}
             lastPoints={lastPoints}
+            boardPx={boardPx}
           />
 
           <div className="relative">
@@ -66,6 +68,7 @@ export default function Index() {
               cols={gridCols}
               rows={gridRows}
               cellSize={cellSize}
+              boardPx={boardPx}
               flyingTile={null}
               particles={particles}
               poppingCells={poppingCells}

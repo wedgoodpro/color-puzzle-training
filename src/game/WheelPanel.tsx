@@ -14,6 +14,7 @@ interface WheelPanelProps {
   bestScore: number;
   scoreAnim: boolean;
   lastPoints: number | null;
+  boardPx?: number;
 }
 
 export default function WheelPanel({
@@ -29,8 +30,9 @@ export default function WheelPanel({
   bestScore,
   scoreAnim,
   lastPoints,
+  boardPx = BOARD_W,
 }: WheelPanelProps) {
-  const wheelSize = BOARD_W * 0.92;
+  const wheelSize = boardPx * 0.92;
   const R = wheelSize / 2 - 4;
   const innerR = R * 0.38;
   const sqSize = innerR * 0.85;
@@ -39,8 +41,8 @@ export default function WheelPanel({
   const nextColor = ITTEN_COLORS[nextColorId];
 
   return (
-    <div className="relative" style={{ width: BOARD_W, height: wheelSize }}>
-      <div className="absolute" style={{ left: (BOARD_W - wheelSize) / 2, top: 0 }}>
+    <div className="relative" style={{ width: boardPx, height: wheelSize }}>
+      <div className="absolute" style={{ left: (boardPx - wheelSize) / 2, top: 0 }}>
         <ColorWheel litColorIds={litColorIds} activeColorIds={new Set(activeColorIds)} size={wheelSize} />
 
         {/* Текущий цвет */}

@@ -10,6 +10,9 @@ import {
 } from "@/game/constants";
 
 export function useGameState() {
+  // Динамический размер поля — вписываемся в реальную ширину экрана (минус паддинги)
+  const boardPx = Math.min(330, Math.floor(window.innerWidth - 24));
+
   const initialActiveIds = getActiveColorIds(0);
   const { cols: initCols, rows: initRows } = getGridSize(initialActiveIds.length);
 
@@ -53,7 +56,7 @@ export function useGameState() {
   const [undoSnapshot, setUndoSnapshot] = useState<{ grid: Grid; currentColorId: number; nextColorId: number; score: number } | null>(null);
   const [undoUsed, setUndoUsed] = useState(false);
 
-  const cellSize = getCellSize(gridCols);
+  const cellSize = Math.floor((boardPx - (gridCols - 1) * GAP) / gridCols);
 
   // Гравитация к верху: новый блок добавляется в нижнюю свободную строку
   const findTargetRow = useCallback((col: number, g: Grid): number => {
@@ -573,6 +576,7 @@ export function useGameState() {
     nextColorId,
     activeColorIds,
     cellSize,
+    boardPx,
     handleColumnClick,
     handleUndo,
     canUndo,

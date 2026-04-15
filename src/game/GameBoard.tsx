@@ -10,6 +10,7 @@ interface GameBoardProps {
   cols: number;
   rows: number;
   cellSize: number;
+  boardPx?: number;
   flyingTile: FlyingTile | null;
   particles: Particle[];
   poppingCells: Set<string>;
@@ -27,6 +28,7 @@ export default function GameBoard({
   cols,
   rows,
   cellSize,
+  boardPx = BOARD_W,
   particles,
   poppingCells,
   gravityMs,
@@ -36,6 +38,8 @@ export default function GameBoard({
   onColumnHover,
   boardRef,
 }: GameBoardProps) {
+  const boardW = boardPx;
+  const boardH = boardPx;
   const colorCells: {
     key: string; ci: number; ri: number;
     colorId: number; isPopping: boolean; dropFrom?: number;
@@ -65,7 +69,7 @@ export default function GameBoard({
     <div
       ref={boardRef}
       className="relative overflow-visible"
-      style={{ width: BOARD_W, height: BOARD_H }}
+      style={{ width: boardW, height: boardH }}
     >
       {/* Фоновые ячейки */}
       {Array.from({ length: actualRows }, (_, ri) =>
