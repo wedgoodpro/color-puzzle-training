@@ -53,10 +53,11 @@ export function useGameState() {
   const cellSize = getCellSize(gridCols);
 
   // Гравитация к верху: новый блок добавляется в нижнюю свободную строку
-  const findTargetRow = useCallback((col: number, g: Grid, rows: number): number => {
-    let bottom = rows - 1;
-    while (bottom >= 0 && g[bottom][col] !== null) bottom--;
-    return bottom; // -1 если столбец полон
+  const findTargetRow = useCallback((col: number, g: Grid): number => {
+    const bottom = g.length - 1;
+    let r = bottom;
+    while (r >= 0 && g[r]?.[col] !== null) r--;
+    return r;
   }, []);
 
   const triggerScoreAnim = (pts: number) => {
@@ -405,14 +406,14 @@ export function useGameState() {
   const handleColumnClick = useCallback(
     (col: number) => {
       if (gameOver || newColorsNotice) return;
-      const targetRow = findTargetRow(col, gridRef.current, gridRowsRef.current);
+      const targetRow = findTargetRow(col, gridRef.current);
       if (targetRow === -1) return;
 
       const colorId = currentColorId;
       const activeColorIds = getActiveColorIds(scoreRef.current);
-      const cs = getCellSize(gridColsRef.current);
-      const rows = gridRowsRef.current;
-      const cols = gridColsRef.current;
+      const rows = gridRef.current.length;
+      const cols = gridRef.current[0]?.length ?? gridColsRef.current;
+      const cs = getCellSize(cols);
 
       // Сохраняем snapshot для undo (один раз за игру пока не использован)
       setUndoSnapshot({
