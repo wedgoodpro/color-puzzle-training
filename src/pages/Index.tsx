@@ -32,6 +32,9 @@ export default function Index() {
     undoUnlocked,
     showNextColor,
     restartGame,
+    hintActive,
+    hintColorIds,
+    setHintActive,
   } = useGameState();
 
   return (
@@ -55,6 +58,10 @@ export default function Index() {
             bestScore={bestScore}
             scoreAnim={scoreAnim}
             lastPoints={lastPoints}
+            hintActive={hintActive}
+            hintColorIds={hintColorIds}
+            onHintStart={() => setHintActive(true)}
+            onHintEnd={() => setHintActive(false)}
           />
 
           <div className="relative">
@@ -68,6 +75,7 @@ export default function Index() {
               poppingCells={poppingCells}
               gravityMs={gravityMs}
               hoverCol={hoverCol}
+              highlightColorIds={hintActive ? hintColorIds : undefined}
               getFlyingY={() => 0}
               onColumnClick={handleColumnClick}
               onColumnHover={setHoverCol}
