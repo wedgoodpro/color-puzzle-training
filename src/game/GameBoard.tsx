@@ -15,7 +15,6 @@ interface GameBoardProps {
   poppingCells: Set<string>;
   gravityMs: number;
   hoverCol: number | null;
-  highlightColorIds?: Set<number>;
   getFlyingY: (ft: FlyingTile) => number;
   onColumnClick: (col: number) => void;
   onColumnHover: (col: number | null) => void;
@@ -31,7 +30,6 @@ export default function GameBoard({
   poppingCells,
   gravityMs,
   hoverCol,
-  highlightColorIds,
   onColumnClick,
   onColumnHover,
   boardRef,
@@ -99,9 +97,6 @@ export default function GameBoard({
           anim = `slideUp ${dur}ms cubic-bezier(0.34,1.4,0.64,1) forwards`;
         }
 
-        const isHighlighted = !!highlightColorIds?.has(colorId);
-        const color = ITTEN_COLORS[colorId];
-
         return (
           <div
             key={key}
@@ -111,15 +106,10 @@ export default function GameBoard({
               top,
               width: cellSize,
               height: cellSize,
-              backgroundColor: color.hex,
+              backgroundColor: ITTEN_COLORS[colorId].hex,
               animation: anim,
               ["--drop" as string]: dropFrom !== undefined ? `${dropFrom}px` : "0px",
               zIndex: 2,
-              boxShadow: isHighlighted
-                ? `0 0 0 2px #fff, 0 0 12px 3px ${color.hex}`
-                : undefined,
-              opacity: highlightColorIds && highlightColorIds.size > 0 && !isHighlighted ? 0.3 : 1,
-              transition: "box-shadow 0.2s ease, opacity 0.2s ease",
             }}
           />
         );

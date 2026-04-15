@@ -42,6 +42,8 @@ export function useGameState() {
   const [gameOver, setGameOver] = useState(false);
   const [hoverCol, setHoverCol] = useState<number | null>(null);
   const [litColorIds, setLitColorIds] = useState<Set<number>>(new Set());
+  const [reviewPending, setReviewPending] = useState(false);
+  const reviewResolveRef = useRef<(() => void) | null>(null);
   const [newColorsNotice, setNewColorsNotice] = useState<{ names: string[]; ids: number[] } | null>(null);
   const prevActiveLenRef = useRef(initialActiveIds.length);
   const lastTwoColorsRef = useRef<number[]>([]);
@@ -333,17 +335,21 @@ export function useGameState() {
         return                           { popDelay: 450, gravMs: 360 };
       };
 
-      // Запускаем каскад: анимация → удаление → гравитация → повтор
+      // Запускаем каскад: анимация → (пауза для триады/тетрады) → удаление → гравитация → повтор
       const runCascade = (currentGrid: Grid, removeCells: [number, number][], pts: number) => {
         const { popDelay, gravMs } = getTimings(pts);
+        const isTriadOrTetrad = pts >= POINTS_TRIAD;
 
         setPoppingCells(new Set(removeCells.map(([r, c]) => `${r}-${c}`)));
         spawnParticles(removeCells, currentGrid, cs);
         const removedColors = new Set(removeCells.map(([r, c]) => currentGrid[r][c]!.colorId));
         setLitColorIds(removedColors);
-        setTimeout(() => setLitColorIds(new Set()), gravMs + popDelay);
 
-        setTimeout(() => {
+        const proceed = () => {
+          setReviewPending(false);
+          reviewResolveRef.current = null;
+          setLitColorIds(new Set());
+
           // Удаляем совпавшие ячейки
           const afterRemove = currentGrid.map((r) => [...r]) as Grid;
           removeCells.forEach(([r, c]) => { afterRemove[r][c] = null; });
@@ -353,18 +359,15 @@ export function useGameState() {
           const afterGravity = applyGravity(afterRemove, rows, cols);
           const cs2 = getCellSize(cols);
           for (let c = 0; c < cols; c++) {
-            // Собираем старые позиции ячеек (до удаления) по colorId
             const oldPositions: number[] = [];
             for (let r = 0; r < rows; r++) {
               if (afterRemove[r][c] !== null) oldPositions.push(r);
             }
-            // Новые позиции после гравитации
             let newIdx = 0;
             for (let r = 0; r < rows; r++) {
               if (afterGravity[r][c] !== null) {
                 const oldR = oldPositions[newIdx];
                 if (oldR !== undefined && oldR !== r) {
-                  // ячейка сдвинулась с oldR на r (вверх), dropFrom = разница в пикселях
                   afterGravity[r][c] = { ...afterGravity[r][c]!, dropFrom: (oldR - r) * (cs2 + GAP) };
                 }
                 newIdx++;
@@ -389,17 +392,14 @@ export function useGameState() {
           });
           triggerScoreAnim(pts);
 
-          // После анимации убираем dropFrom и ищем новые совпадения
           setTimeout(() => {
             const cleanGrid = afterGravity.map((r) =>
               r.map((cell) => cell ? { colorId: cell.colorId } : null)
             ) as Grid;
-            // Не перетираем сетку если она уже была расширена (используем актуальный prev)
             setGrid((prev) => {
               const curRows = prev.length;
               const curCols = prev[0]?.length ?? cols;
               if (curRows === rows && curCols === cols) return cleanGrid;
-              // Сетка уже расширена — накладываем cleanGrid только на старую область
               return prev.map((row, ri) =>
                 row.map((cell, ci) =>
                   ri < rows && ci < cols ? (cleanGrid[ri]?.[ci] ?? null) : cell
@@ -411,9 +411,24 @@ export function useGameState() {
             const nextMatch = findAnyMatch(cleanGrid, Math.min(rows, actualRows), Math.min(cols, actualCols));
             if (nextMatch) {
               runCascade(cleanGrid, nextMatch.cells, nextMatch.points);
+            } else {
+              setGravityMs(0);
+              setGameOver(cleanGrid.every((r) => r.every((c) => c !== null)));
             }
           }, gravMs + 50);
-        }, popDelay);
+        };
+
+        if (isTriadOrTetrad) {
+          // Ждём popDelay (квадраты анимируются), потом показываем паузу — ждём тапа
+          setTimeout(() => {
+            setReviewPending(true);
+            reviewResolveRef.current = proceed;
+          }, popDelay);
+        } else {
+          // Пара: обычная автоматическая анимация
+          setTimeout(() => setLitColorIds(new Set()), gravMs + popDelay);
+          setTimeout(proceed, popDelay);
+        }
       };
 
       runCascade(g, toRemove, points);
@@ -583,42 +598,12 @@ export function useGameState() {
   const canUndo = undoUnlocked && !!undoSnapshot && !undoUsed;
   const showNextColor = score >= 75;
 
-  // Подсказка: показать все цвета, которые могут исчезнуть прямо сейчас
-  const [hintActive, setHintActiveState] = useState(false);
-  const [hintColorIds, setHintColorIds] = useState<Set<number>>(new Set());
-
-  const computeHintColors = useCallback((): Set<number> => {
-    const g = gridRef.current;
-    const rows = g.length;
-    const cols = g[0]?.length ?? 0;
-    const found = new Set<number>();
-    const visited = new Set<string>();
-    let tempGrid = g;
-    while (true) {
-      const match = findAnyMatch(tempGrid, rows, cols);
-      if (!match) break;
-      const key = match.cells.map(([r, c]) => `${r}-${c}`).sort().join('|');
-      if (visited.has(key)) break;
-      visited.add(key);
-      match.cells.forEach(([r, c]) => {
-        const cell = tempGrid[r][c];
-        if (cell) found.add(cell.colorId);
-      });
-      const next = tempGrid.map((row) => [...row]) as Grid;
-      match.cells.forEach(([r, c]) => { next[r][c] = null; });
-      tempGrid = next;
+  // Тап для продолжения после паузы-ревью
+  const handleReviewTap = useCallback(() => {
+    if (reviewResolveRef.current) {
+      reviewResolveRef.current();
     }
-    return found;
-  }, [findAnyMatch]);
-
-  const setHintActive = useCallback((active: boolean) => {
-    setHintActiveState(active);
-    if (active) {
-      setHintColorIds(computeHintColors());
-    } else {
-      setHintColorIds(new Set());
-    }
-  }, [computeHintColors]);
+  }, []);
 
   return {
     grid,
@@ -646,8 +631,7 @@ export function useGameState() {
     undoUnlocked,
     showNextColor,
     restartGame,
-    hintActive,
-    hintColorIds,
-    setHintActive,
+    reviewPending,
+    handleReviewTap,
   };
 }

@@ -32,9 +32,8 @@ export default function Index() {
     undoUnlocked,
     showNextColor,
     restartGame,
-    hintActive,
-    hintColorIds,
-    setHintActive,
+    reviewPending,
+    handleReviewTap,
   } = useGameState();
 
   return (
@@ -58,10 +57,6 @@ export default function Index() {
             bestScore={bestScore}
             scoreAnim={scoreAnim}
             lastPoints={lastPoints}
-            hintActive={hintActive}
-            hintColorIds={hintColorIds}
-            onHintStart={() => setHintActive(true)}
-            onHintEnd={() => setHintActive(false)}
           />
 
           <div className="relative">
@@ -75,7 +70,6 @@ export default function Index() {
               poppingCells={poppingCells}
               gravityMs={gravityMs}
               hoverCol={hoverCol}
-              highlightColorIds={hintActive ? hintColorIds : undefined}
               getFlyingY={() => 0}
               onColumnClick={handleColumnClick}
               onColumnHover={setHoverCol}
@@ -97,6 +91,31 @@ export default function Index() {
         </div>
       </div>
 
+      {/* Пауза-ревью: тап в любое место продолжает игру */}
+      {reviewPending && (
+        <div
+          className="fixed inset-0 z-50"
+          style={{ touchAction: "manipulation" }}
+          onClick={handleReviewTap}
+          onTouchEnd={(e) => { e.preventDefault(); handleReviewTap(); }}
+        >
+          <div
+            className="absolute bottom-8 left-0 right-0 flex justify-center pointer-events-none"
+          >
+            <span
+              className="font-mono uppercase tracking-widest"
+              style={{
+                fontSize: 12,
+                color: "#555",
+                animation: "float-up 1.5s ease-in-out infinite alternate",
+              }}
+            >
+              нажми чтобы продолжить
+            </span>
+          </div>
+        </div>
+      )}
+
       {gameOver && (
         <GameOverModal
           score={score}
@@ -106,8 +125,8 @@ export default function Index() {
 
       <style>{`
         @keyframes float-up {
-          0%   { opacity: 1; transform: translateY(0); }
-          100% { opacity: 0; transform: translateY(-40px); }
+          0%   { opacity: 0.3; transform: translateY(4px); }
+          100% { opacity: 1;   transform: translateY(-4px); }
         }
         @keyframes fade-in-overlay {
           0%   { opacity: 0; transform: scale(0.97); }

@@ -14,10 +14,6 @@ interface WheelPanelProps {
   bestScore: number;
   scoreAnim: boolean;
   lastPoints: number | null;
-  hintActive: boolean;
-  hintColorIds: Set<number>;
-  onHintStart: () => void;
-  onHintEnd: () => void;
 }
 
 export default function WheelPanel({
@@ -33,10 +29,6 @@ export default function WheelPanel({
   bestScore,
   scoreAnim,
   lastPoints,
-  hintActive,
-  hintColorIds,
-  onHintStart,
-  onHintEnd,
 }: WheelPanelProps) {
   const wheelSize = BOARD_W * 0.92;
   const R = wheelSize / 2 - 4;
@@ -46,13 +38,10 @@ export default function WheelPanel({
   const currentColor = ITTEN_COLORS[currentColorId];
   const nextColor = ITTEN_COLORS[nextColorId];
 
-  // Колесо показывает подсказку если hint активен, иначе обычный litColorIds
-  const displayLitIds = hintActive ? hintColorIds : litColorIds;
-
   return (
     <div className="relative" style={{ width: BOARD_W, height: wheelSize }}>
       <div className="absolute" style={{ left: (BOARD_W - wheelSize) / 2, top: 0 }}>
-        <ColorWheel litColorIds={displayLitIds} activeColorIds={new Set(activeColorIds)} size={wheelSize} />
+        <ColorWheel litColorIds={litColorIds} activeColorIds={new Set(activeColorIds)} size={wheelSize} />
 
         {/* Текущий цвет */}
         <div
@@ -128,33 +117,6 @@ export default function WheelPanel({
           {bestScore}
         </div>
         <div className="font-mono" style={{ color: "#555", fontSize: 10 }}>рекорд</div>
-      </div>
-
-      {/* Кнопка подсказки — нижний левый угол */}
-      <div className="absolute" style={{ left: 0, bottom: 4 }}>
-        <button
-          onMouseDown={onHintStart}
-          onMouseUp={onHintEnd}
-          onMouseLeave={onHintEnd}
-          onTouchStart={(e) => { e.preventDefault(); onHintStart(); }}
-          onTouchEnd={onHintEnd}
-          className="font-mono font-medium leading-none block"
-          style={{
-            fontSize: 28,
-            color: hintActive ? "#fff" : "#3a3a3a",
-            background: "none",
-            border: "none",
-            padding: 0,
-            cursor: "pointer",
-            lineHeight: 1,
-            transition: "color 0.15s",
-            userSelect: "none",
-            WebkitUserSelect: "none",
-          }}
-        >
-          ?
-        </button>
-        <div className="font-mono" style={{ color: hintActive ? "#666" : "#333", fontSize: 10, transition: "color 0.15s" }}>схема</div>
       </div>
 
       {/* Кнопка отмены — нижний правый угол, появляется при 50 очках */}
