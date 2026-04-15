@@ -435,7 +435,7 @@ export default function Index() {
               onColumnHover={setHoverCol}
             />
 
-            {/* Ссылка и кнопка сохранения */}
+            {/* Ссылка */}
             <div className="flex flex-col items-center gap-6 w-full pb-2">
               <a
                 href="https://vk.ru/fotoklubpro"
@@ -446,7 +446,6 @@ export default function Index() {
               >
                 хочешь научиться фотографировать?
               </a>
-              <DownloadHtmlButton />
             </div>
           </div>
 
