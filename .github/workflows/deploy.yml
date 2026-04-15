@@ -23,7 +23,7 @@ jobs:
         run: bun install
 
       - name: Build
-        run: bun run build
+        run: bun run build -- --base=/color-puzzle-training/
 
       - uses: actions/upload-pages-artifact@v3
         with:
