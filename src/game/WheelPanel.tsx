@@ -11,6 +11,7 @@ interface WheelPanelProps {
   undoUnlocked: boolean;
   onUndo: () => void;
   score: number;
+  comboScore: number;
   bestScore: number;
   scoreAnim: boolean;
   lastPoints: number | null;
@@ -27,6 +28,7 @@ export default function WheelPanel({
   undoUnlocked,
   onUndo,
   score,
+  comboScore,
   bestScore,
   scoreAnim,
   lastPoints,
@@ -118,6 +120,17 @@ export default function WheelPanel({
           {bestScore}
         </div>
         <div className="font-mono" style={{ color: "#555", fontSize: 10 }}>рекорд</div>
+      </div>
+
+      {/* Комбо-счётчик — нижний левый угол */}
+      <div className="absolute" style={{ left: 0, bottom: 4 }}>
+        <div
+          className="font-mono font-medium leading-none"
+          style={{ fontSize: 24, color: comboScore > 0 ? "#fff" : "#3a3a3a" }}
+        >
+          {comboScore}
+        </div>
+        <div className="font-mono" style={{ color: "#555", fontSize: 10 }}>схем</div>
       </div>
 
       {/* Кнопка отмены — нижний правый угол, появляется при 50 очках */}

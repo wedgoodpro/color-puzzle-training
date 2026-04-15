@@ -57,6 +57,7 @@ export default function Index() {
             undoUnlocked={undoUnlocked}
             onUndo={handleUndo}
             score={score}
+            comboScore={comboScore}
             bestScore={bestScore}
             scoreAnim={scoreAnim}
             lastPoints={lastPoints}
