@@ -39,8 +39,9 @@ export default function WheelPanel({
             left: "50%",
             transform: "translate(-50%, -50%)",
             backgroundColor: currentColor.hex,
-            transition: "background-color 0.25s ease, box-shadow 0.25s",
+            transition: "background-color 0.25s ease, box-shadow 0.25s, opacity 0.25s ease",
             boxShadow: `0 2px 16px ${currentColor.hex}99`,
+            opacity: litColorIds.size > 0 ? 0 : 1,
           }}
         />
       </div>
