@@ -405,8 +405,28 @@ export function useGameState() {
         if (afterGravity[r][col] !== null) filledCount++;
       }
       const newRow = filledCount - 1;
-      setGrid(afterGravity);
-      checkAndPop(afterGravity, newRow, col, colorId, rows, cols, cs);
+
+      // Если кубик падает выше нижней строки — анимируем подъём через двухшаговый рендер
+      const bottomFree = gridRef.current[rows - 1][col] === null;
+      if (bottomFree && targetRow < rows - 1) {
+        // Шаг 1: рендерим кубик внизу
+        const gridBottom = gridRef.current.map((r) => [...r]) as Grid;
+        gridBottom[rows - 1][col] = { colorId };
+        setGravityMs(280);
+        setGrid(gridBottom);
+        // Шаг 2: через кадр — финальная позиция, transition анимирует движение вверх
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          setGrid(afterGravity);
+          setTimeout(() => {
+            setGravityMs(0);
+            checkAndPop(afterGravity, newRow, col, colorId, rows, cols, cs);
+          }, 300);
+        }));
+      } else {
+        // Нижняя строка занята — ставим сразу без анимации подъёма
+        setGrid(afterGravity);
+        checkAndPop(afterGravity, newRow, col, colorId, rows, cols, cs);
+      }
 
       // Следующий цвет становится текущим, генерируем новый следующий
       const last2 = lastTwoColorsRef.current;
