@@ -15,6 +15,7 @@ export default function Index() {
     scoreAnim,
     lastPoints,
     poppingCells,
+    gravityMs,
     particles,
     gameOver,
     hoverCol,
@@ -55,6 +56,7 @@ export default function Index() {
               flyingTile={null}
               particles={particles}
               poppingCells={poppingCells}
+              gravityMs={gravityMs}
               hoverCol={hoverCol}
               getFlyingY={() => 0}
               onColumnClick={handleColumnClick}

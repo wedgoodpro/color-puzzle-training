@@ -35,6 +35,7 @@ export function useGameState() {
   const [scoreAnim, setScoreAnim] = useState(false);
   const [lastPoints, setLastPoints] = useState<number | null>(null);
   const [poppingCells, setPoppingCells] = useState<Set<string>>(new Set());
+  const [gravityMs, setGravityMs] = useState(0);
   const [particles, setParticles] = useState<Particle[]>([]);
   const particleIdRef = useRef(0);
   const [gameOver, setGameOver] = useState(false);
@@ -312,13 +313,22 @@ export function useGameState() {
       };
       toRemove = dedup(toRemove);
 
+      // Длительность гравитации и задержка зависят от типа совпадения
+      const getTimings = (pts: number) => {
+        if (pts >= POINTS_TETRAD) return { popDelay: 500, gravMs: 700 };
+        if (pts >= POINTS_TRIAD)  return { popDelay: 380, gravMs: 500 };
+        return                           { popDelay: 260, gravMs: 300 };
+      };
+
       // Запускаем каскад: анимация → удаление → гравитация → повтор
-      const runCascade = (currentGrid: Grid, removeCells: [number, number][], pts: number, delay: number) => {
+      const runCascade = (currentGrid: Grid, removeCells: [number, number][], pts: number) => {
+        const { popDelay, gravMs } = getTimings(pts);
+
         setPoppingCells(new Set(removeCells.map(([r, c]) => `${r}-${c}`)));
         spawnParticles(removeCells, currentGrid, cs);
         const removedColors = new Set(removeCells.map(([r, c]) => currentGrid[r][c]!.colorId));
         setLitColorIds(removedColors);
-        setTimeout(() => setLitColorIds(new Set()), 900);
+        setTimeout(() => setLitColorIds(new Set()), gravMs + popDelay);
 
         setTimeout(() => {
           // Удаляем совпавшие ячейки
@@ -326,26 +336,34 @@ export function useGameState() {
           removeCells.forEach(([r, c]) => { afterRemove[r][c] = null; });
           setPoppingCells(new Set());
 
-          // Гравитация
-          const afterGravity = applyGravity(afterRemove, rows, cols);
+          // Показываем grid с дырками, включаем transition для плавной гравитации
+          setGravityMs(gravMs);
+          setGrid(afterRemove);
 
-          setGrid(afterGravity);
-          setScore((s) => {
-            const newScore = s + pts;
-            scoreRef.current = newScore;
-            return newScore;
-          });
-          triggerScoreAnim(pts);
+          // Через 1 кадр применяем гравитацию — CSS transition её анимирует
+          setTimeout(() => {
+            const afterGravity = applyGravity(afterRemove, rows, cols);
+            setGrid(afterGravity);
+            setScore((s) => {
+              const newScore = s + pts;
+              scoreRef.current = newScore;
+              return newScore;
+            });
+            triggerScoreAnim(pts);
 
-          // Ищем новые совпадения после гравитации
-          const nextMatch = findAnyMatch(afterGravity, rows, cols);
-          if (nextMatch) {
-            runCascade(afterGravity, nextMatch.cells, nextMatch.points, 350);
-          }
-        }, delay);
+            // После завершения гравитации сбрасываем transition и ищем новые совпадения
+            setTimeout(() => {
+              setGravityMs(0);
+              const nextMatch = findAnyMatch(afterGravity, rows, cols);
+              if (nextMatch) {
+                runCascade(afterGravity, nextMatch.cells, nextMatch.points);
+              }
+            }, gravMs + 50);
+          }, 32);
+        }, popDelay);
       };
 
-      runCascade(g, toRemove, points, 320);
+      runCascade(g, toRemove, points);
     },
     [spawnParticles]
   );
@@ -452,6 +470,7 @@ export function useGameState() {
     scoreAnim,
     lastPoints,
     poppingCells,
+    gravityMs,
     particles,
     gameOver,
     hoverCol,

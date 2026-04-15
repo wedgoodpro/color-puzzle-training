@@ -13,6 +13,7 @@ interface GameBoardProps {
   flyingTile: FlyingTile | null;
   particles: Particle[];
   poppingCells: Set<string>;
+  gravityMs: number;
   hoverCol: number | null;
   getFlyingY: (ft: FlyingTile) => number;
   onColumnClick: (col: number) => void;
@@ -25,50 +26,83 @@ export default function GameBoard({
   cols,
   rows,
   cellSize,
-  flyingTile,
   particles,
   poppingCells,
+  gravityMs,
   hoverCol,
-  getFlyingY,
   onColumnClick,
   onColumnHover,
   boardRef,
 }: GameBoardProps) {
-  void rows;
+  // Для анимации гравитации: ключ цветной ячейки = col-slotIndex (порядок в столбце снизу вверх).
+  // React сохраняет DOM-узел при том же ключе → CSS transition top анимирует движение.
+  // Слоты считаются от 0 = верхний занятый, max = нижний занятый.
+  const colorCells: { key: string; ci: number; ri: number; colorId: number; isPopping: boolean }[] = [];
+  for (let ci = 0; ci < cols; ci++) {
+    let slotIdx = 0;
+    for (let ri = 0; ri < rows; ri++) {
+      const cell = grid[ri][ci];
+      if (cell !== null) {
+        colorCells.push({
+          key: `c${ci}s${slotIdx}`,
+          ci,
+          ri,
+          colorId: cell.colorId,
+          isPopping: poppingCells.has(`${ri}-${ci}`),
+        });
+        slotIdx++;
+      }
+    }
+  }
+
   return (
     <div
       ref={boardRef}
       className="relative overflow-visible"
       style={{ width: BOARD_W, height: BOARD_H }}
     >
-      {grid.map((row, ri) =>
-        row.map((cell, ci) => {
-          const key = `${ri}-${ci}`;
-          const isPopping = poppingCells.has(key);
-          const isHoverCol = hoverCol === ci;
-          const c = cell ? ITTEN_COLORS[cell.colorId] : null;
-          return (
-            <div
-              key={key}
-              onClick={() => onColumnClick(ci)}
-              onMouseEnter={() => onColumnHover(ci)}
-              onMouseLeave={() => onColumnHover(null)}
-              className="absolute cursor-pointer rounded-sm"
-              style={{
-                left: ci * (cellSize + GAP),
-                top: ri * (cellSize + GAP),
-                width: cellSize,
-                height: cellSize,
-                backgroundColor: c ? c.hex : isHoverCol ? CELL_EMPTY_HOVER : CELL_EMPTY,
-                animation: isPopping
-                  ? "pop 0.32s cubic-bezier(0.36,0.07,0.19,0.97) forwards"
-                  : undefined,
-                transition: c ? undefined : "background-color 0.1s",
-              }}
-            />
-          );
-        })
+      {/* Фоновые пустые ячейки (кликабельны) */}
+      {Array.from({ length: rows }, (_, ri) =>
+        Array.from({ length: cols }, (_, ci) => (
+          <div
+            key={`bg-${ri}-${ci}`}
+            onClick={() => onColumnClick(ci)}
+            onMouseEnter={() => onColumnHover(ci)}
+            onMouseLeave={() => onColumnHover(null)}
+            className="absolute cursor-pointer rounded-sm"
+            style={{
+              left: ci * (cellSize + GAP),
+              top: ri * (cellSize + GAP),
+              width: cellSize,
+              height: cellSize,
+              backgroundColor: hoverCol === ci ? CELL_EMPTY_HOVER : CELL_EMPTY,
+              transition: "background-color 0.1s",
+            }}
+          />
+        ))
       )}
+
+      {/* Цветные ячейки — стабильные ключи, transition top анимирует гравитацию */}
+      {colorCells.map(({ key, ci, ri, colorId, isPopping }) => (
+        <div
+          key={key}
+          className="absolute pointer-events-none rounded-sm"
+          style={{
+            left: ci * (cellSize + GAP),
+            top: ri * (cellSize + GAP),
+            width: cellSize,
+            height: cellSize,
+            backgroundColor: ITTEN_COLORS[colorId].hex,
+            animation: isPopping
+              ? "pop 0.32s cubic-bezier(0.36,0.07,0.19,0.97) forwards"
+              : undefined,
+            transition: gravityMs > 0 && !isPopping
+              ? `top ${gravityMs}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
+              : undefined,
+            zIndex: 2,
+          }}
+        />
+      ))}
 
       {/* Particles */}
       {particles.map((p) => {
@@ -93,8 +127,6 @@ export default function GameBoard({
           />
         );
       })}
-
-      {/* Flying tile рендерится в Index.tsx как fixed */}
     </div>
   );
 }
