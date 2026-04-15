@@ -140,7 +140,6 @@ export function useGameState() {
   // соседних друг с другом (цепочка без повторов цвета)
   const findGroupOnBoard = (g: Grid, rows: number, cols: number, groupIds: number[]): [number, number][] | null => {
     const groupSet = new Set(groupIds);
-    const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
 
     // Собираем все ячейки каждого цвета группы
     const byColor = new Map<number, [number, number][]>();
@@ -168,15 +167,6 @@ export function useGameState() {
       for (const [r, c] of byColor.get(colorId)!) {
         const key = `${r}-${c}`;
         if (usedCells.has(key)) continue;
-        // Быстрая проверка: ячейка должна иметь хотя бы одного соседа из группы
-        // (кроме первой ячейки)
-        if (idx > 0) {
-          const hasNeighborInGroup = dirs.some(([dr, dc]) => {
-            const nk = `${r+dr}-${c+dc}`;
-            return usedCells.has(nk);
-          });
-          if (!hasNeighborInGroup) continue;
-        }
         result[idx] = [r, c];
         usedCells.add(key);
         if (dfs(idx + 1)) return true;
