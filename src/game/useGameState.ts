@@ -529,7 +529,8 @@ export function useGameState() {
   };
 
   const activeColorIds = getActiveColorIds(score);
-  const canUndo = score >= 50 && !!undoSnapshot && !undoUsed;
+  const undoUnlocked = score >= 50;
+  const canUndo = undoUnlocked && !!undoSnapshot && !undoUsed;
   const showNextColor = score >= 75;
 
   return {
@@ -555,6 +556,7 @@ export function useGameState() {
     handleColumnClick,
     handleUndo,
     canUndo,
+    undoUnlocked,
     showNextColor,
     restartGame,
   };

@@ -29,6 +29,7 @@ export default function Index() {
     handleColumnClick,
     handleUndo,
     canUndo,
+    undoUnlocked,
     showNextColor,
     restartGame,
   } = useGameState();
@@ -48,6 +49,7 @@ export default function Index() {
             nextColorId={nextColorId}
             showNextColor={showNextColor}
             canUndo={canUndo}
+            undoUnlocked={undoUnlocked}
             onUndo={handleUndo}
             score={score}
             bestScore={bestScore}

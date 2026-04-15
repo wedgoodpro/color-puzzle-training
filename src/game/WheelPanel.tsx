@@ -8,6 +8,7 @@ interface WheelPanelProps {
   nextColorId: number;
   showNextColor: boolean;
   canUndo: boolean;
+  undoUnlocked: boolean;
   onUndo: () => void;
   score: number;
   bestScore: number;
@@ -22,6 +23,7 @@ export default function WheelPanel({
   nextColorId,
   showNextColor,
   canUndo,
+  undoUnlocked,
   onUndo,
   score,
   bestScore,
@@ -117,29 +119,28 @@ export default function WheelPanel({
         <div className="font-mono" style={{ color: "#555", fontSize: 10 }}>рекорд</div>
       </div>
 
-      {/* Кнопка отмены — нижний правый угол, симметрично очкам */}
-      <div className="absolute text-right" style={{ right: 0, bottom: 4 }}>
-        {canUndo ? (
+      {/* Кнопка отмены — нижний правый угол, появляется при 50 очках */}
+      {undoUnlocked && (
+        <div className="absolute text-right" style={{ right: 0, bottom: 4 }}>
           <button
-            onClick={onUndo}
+            onClick={canUndo ? onUndo : undefined}
             className="font-mono font-medium leading-none block w-full text-right"
             style={{
-              fontSize: 24,
-              color: "#aaa",
+              fontSize: 28,
+              color: canUndo ? "#fff" : "#3a3a3a",
               background: "none",
               border: "none",
               padding: 0,
-              cursor: "pointer",
+              cursor: canUndo ? "pointer" : "default",
               lineHeight: 1,
+              transition: "color 0.3s",
             }}
           >
             ↩
           </button>
-        ) : (
-          <div className="font-mono font-medium leading-none" style={{ fontSize: 24, color: "#2e2e2e" }}>↩</div>
-        )}
-        <div className="font-mono" style={{ color: "#555", fontSize: 10 }}>отмена</div>
-      </div>
+          <div className="font-mono" style={{ color: canUndo ? "#666" : "#333", fontSize: 10, transition: "color 0.3s" }}>отмена</div>
+        </div>
+      )}
     </div>
   );
 }
