@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
   ITTEN_COLORS, COLOR_LEVELS,
   POINTS_PAIR, POINTS_TRIAD, POINTS_TETRAD,
@@ -584,17 +584,16 @@ export function useGameState() {
   const showNextColor = score >= 75;
 
   // Подсказка: показать все цвета, которые могут исчезнуть прямо сейчас
-  const [hintActive, setHintActive] = useState(false);
-  const hintColorIds = useMemo<Set<number>>(() => {
-    if (!hintActive) return new Set();
+  const [hintActive, setHintActiveState] = useState(false);
+  const [hintColorIds, setHintColorIds] = useState<Set<number>>(new Set());
+
+  const computeHintColors = useCallback((): Set<number> => {
     const g = gridRef.current;
     const rows = g.length;
     const cols = g[0]?.length ?? 0;
     const found = new Set<number>();
-    // Сканируем всё поле через findAnyMatch, собирая все пары совпадений
     const visited = new Set<string>();
     let tempGrid = g;
-     
     while (true) {
       const match = findAnyMatch(tempGrid, rows, cols);
       if (!match) break;
@@ -605,13 +604,21 @@ export function useGameState() {
         const cell = tempGrid[r][c];
         if (cell) found.add(cell.colorId);
       });
-      // Убираем найденные ячейки чтобы искать дальше
       const next = tempGrid.map((row) => [...row]) as Grid;
       match.cells.forEach(([r, c]) => { next[r][c] = null; });
       tempGrid = next;
     }
     return found;
-  }, [hintActive, findAnyMatch]);
+  }, [findAnyMatch]);
+
+  const setHintActive = useCallback((active: boolean) => {
+    setHintActiveState(active);
+    if (active) {
+      setHintColorIds(computeHintColors());
+    } else {
+      setHintColorIds(new Set());
+    }
+  }, [computeHintColors]);
 
   return {
     grid,
