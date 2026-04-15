@@ -376,7 +376,16 @@ export function useGameState() {
             }
           }
 
-          setGrid(afterGravity);
+          setGrid((prev) => {
+            const curRows = prev.length;
+            const curCols = prev[0]?.length ?? cols;
+            if (curRows === rows && curCols === cols) return afterGravity;
+            return prev.map((row, ri) =>
+              row.map((_, ci) =>
+                ri < rows && ci < cols ? (afterGravity[ri]?.[ci] ?? null) : null
+              )
+            ) as Grid;
+          });
           setScore((s) => {
             const newScore = s + pts;
             scoreRef.current = newScore;
@@ -389,8 +398,21 @@ export function useGameState() {
             const cleanGrid = afterGravity.map((r) =>
               r.map((cell) => cell ? { colorId: cell.colorId } : null)
             ) as Grid;
-            setGrid(cleanGrid);
-            const nextMatch = findAnyMatch(cleanGrid, rows, cols);
+            // Не перетираем сетку если она уже была расширена (используем актуальный prev)
+            setGrid((prev) => {
+              const curRows = prev.length;
+              const curCols = prev[0]?.length ?? cols;
+              if (curRows === rows && curCols === cols) return cleanGrid;
+              // Сетка уже расширена — накладываем cleanGrid только на старую область
+              return prev.map((row, ri) =>
+                row.map((cell, ci) =>
+                  ri < rows && ci < cols ? (cleanGrid[ri]?.[ci] ?? null) : cell
+                )
+              ) as Grid;
+            });
+            const actualRows = gridRef.current.length;
+            const actualCols = gridRef.current[0]?.length ?? cols;
+            const nextMatch = findAnyMatch(cleanGrid, Math.min(rows, actualRows), Math.min(cols, actualCols));
             if (nextMatch) {
               runCascade(cleanGrid, nextMatch.cells, nextMatch.points);
             }
