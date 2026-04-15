@@ -43,6 +43,7 @@ export function useGameState() {
   const [hoverCol, setHoverCol] = useState<number | null>(null);
   const [litColorIds, setLitColorIds] = useState<Set<number>>(new Set());
   const [reviewPending, setReviewPending] = useState(false);
+  const reviewPendingRef = useRef(false);
   const [reviewCells, setReviewCells] = useState<Set<string>>(new Set());
   const reviewResolveRef = useRef<(() => void) | null>(null);
   const [newColorsNotice, setNewColorsNotice] = useState<{ names: string[]; ids: number[] } | null>(null);
@@ -347,6 +348,7 @@ export function useGameState() {
         setLitColorIds(removedColors);
 
         const proceed = () => {
+          reviewPendingRef.current = false;
           setReviewPending(false);
           setReviewCells(new Set());
           reviewResolveRef.current = null;
@@ -387,11 +389,6 @@ export function useGameState() {
               )
             ) as Grid;
           });
-          setScore((s) => {
-            const newScore = s + pts;
-            scoreRef.current = newScore;
-            return newScore;
-          });
           triggerScoreAnim(pts);
 
           setTimeout(() => {
@@ -407,6 +404,12 @@ export function useGameState() {
                   ri < rows && ci < cols ? (cleanGrid[ri]?.[ci] ?? null) : cell
                 )
               ) as Grid;
+            });
+            // Начисляем очки после гравитации — useEffect расширения сетки сработает здесь
+            setScore((s) => {
+              const newScore = s + pts;
+              scoreRef.current = newScore;
+              return newScore;
             });
             const actualRows = gridRef.current.length;
             const actualCols = gridRef.current[0]?.length ?? cols;
@@ -424,6 +427,7 @@ export function useGameState() {
           // Сразу ставим паузу — квадраты видны с pop-анимацией, ждём тапа
           const cellKeys = new Set(removeCells.map(([r, c]) => `${r}-${c}`));
           setReviewCells(cellKeys);
+          reviewPendingRef.current = true;
           setReviewPending(true);
           reviewResolveRef.current = proceed;
         } else {
@@ -553,12 +557,17 @@ export function useGameState() {
       const added = COLOR_LEVELS.find((l) => l.threshold === score);
       if (added) {
         const names = added.ids.map((id) => ITTEN_COLORS[id].name);
-        setNewColorsNotice({ names, ids: added.ids });
-        setLitColorIds(new Set(added.ids));
+        // Показываем уведомление о новых цветах после небольшой задержки
+        // чтобы не конфликтовать с текущей анимацией/паузой
+        const noticeDelay = reviewPendingRef.current ? 500 : 0;
         setTimeout(() => {
-          setNewColorsNotice(null);
-          setLitColorIds(new Set());
-        }, 4000);
+          setNewColorsNotice({ names, ids: added.ids });
+          setLitColorIds(new Set(added.ids));
+          setTimeout(() => {
+            setNewColorsNotice(null);
+            setLitColorIds(new Set());
+          }, 4000);
+        }, noticeDelay);
       }
 
       // Расширяем поле: +1 столбец и +1 строка
