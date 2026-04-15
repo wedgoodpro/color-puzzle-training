@@ -201,10 +201,9 @@ export default function Index() {
         const complement = getComplement(colorId);
         for (const n of neighbors) {
           if (n.colorId === complement) {
-            toRemove.push([row, col]);
+            if (toRemove.length === 0) toRemove.push([row, col]);
             toRemove.push([n.r, n.c]);
-            points = 1;
-            break;
+            points += 1;
           }
         }
       }
