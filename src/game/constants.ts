@@ -15,10 +15,16 @@ export const ITTEN_COLORS = [
   { id: 11, name: "Жёлто-зелёный",    hex: "#8DC63F" },
 ];
 
-// Триады (через 4): [0,4,8], [1,5,9], [2,6,10], [3,7,11]
+// Триады равносторонние (через 4): [0,4,8], [1,5,9], [2,6,10], [3,7,11]
+// Триады острые (шаги 2+5 по кругу из 12) — 12 уникальных наборов
 // Тетрады (через 3): [0,3,6,9], [1,4,7,10], [2,5,8,11]
 export const TRIADS: number[][] = [
+  // Равносторонние (шаг 4)
   [0, 4, 8], [1, 5, 9], [2, 6, 10], [3, 7, 11],
+  // Острые (шаги 2+5): 12 уникальных троек (каждая — уникальный набор)
+  [0, 2, 7], [1, 3, 8], [2, 4, 9],  [3, 5, 10],
+  [4, 6, 11],[5, 7, 0], [6, 8, 1],  [7, 9, 2],
+  [8, 10, 3],[9, 11, 4],[10, 0, 5], [11, 1, 6],
 ];
 export const TETRADS: number[][] = [
   [0, 3, 6, 9], [1, 4, 7, 10], [2, 5, 8, 11],
@@ -104,6 +110,9 @@ export const getComplement = (id: number): number => (id + 6) % 12;
 
 export const getTriad = (id: number): number[] | null =>
   TRIADS.find((t) => t.includes(id)) ?? null;
+
+export const getTriadsForColor = (id: number): number[][] =>
+  TRIADS.filter((t) => t.includes(id));
 
 export const getTetrad = (id: number): number[] | null =>
   TETRADS.find((t) => t.includes(id)) ?? null;

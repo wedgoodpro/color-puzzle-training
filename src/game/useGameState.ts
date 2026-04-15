@@ -3,7 +3,7 @@ import {
   ITTEN_COLORS, COLOR_LEVELS, TRIADS, TETRADS,
   POINTS_PAIR, POINTS_TRIAD, POINTS_TETRAD,
   Cell, Grid, Particle,
-  getComplement, getTriad, getTetrad,
+  getComplement, getTriad, getTriadsForColor, getTetrad,
   getActiveColorIds, randColorIdFromActive,
   emptyGrid, loadScores, getBestScore, saveScore,
   getGridSize, getCellSize, GAP,
@@ -232,14 +232,15 @@ export function useGameState() {
         }
       }
 
-      // Приоритет 2: триада — связная цепочка из 3 уникальных цветов триады
+      // Приоритет 2: триада — проверяем все триады в которые входит этот цвет
       if (toRemove.length === 0) {
-        const triad = getTriad(colorId);
-        if (triad) {
+        const triads = getTriadsForColor(colorId);
+        for (const triad of triads) {
           const cells = findGroupOnBoard(g, rows, cols, triad);
           if (cells && cells.some(([r, c]) => r === row && c === col)) {
             toRemove = cells;
             points = POINTS_TRIAD;
+            break;
           }
         }
       }
