@@ -39,10 +39,13 @@ export default function GameBoard({
     colorId: number; isPopping: boolean; dropFrom?: number;
   }[] = [];
 
-  for (let ci = 0; ci < cols; ci++) {
+  const actualRows = grid.length;
+  const actualCols = grid[0]?.length ?? 0;
+
+  for (let ci = 0; ci < actualCols; ci++) {
     let slotIdx = 0;
-    for (let ri = 0; ri < rows; ri++) {
-      const cell = grid[ri][ci];
+    for (let ri = 0; ri < actualRows; ri++) {
+      const cell = grid[ri]?.[ci];
       if (cell !== null) {
         colorCells.push({
           key: `c${ci}s${slotIdx}`,
@@ -63,8 +66,8 @@ export default function GameBoard({
       style={{ width: BOARD_W, height: BOARD_H }}
     >
       {/* Фоновые ячейки */}
-      {Array.from({ length: rows }, (_, ri) =>
-        Array.from({ length: cols }, (_, ci) => (
+      {Array.from({ length: actualRows }, (_, ri) =>
+        Array.from({ length: actualCols }, (_, ci) => (
           <div
             key={`bg-${ri}-${ci}`}
             onClick={() => onColumnClick(ci)}
