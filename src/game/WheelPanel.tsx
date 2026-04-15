@@ -113,26 +113,24 @@ export default function WheelPanel({
             </span>
           )}
         </div>
-        <div className="font-mono" style={{ color: "#555", fontSize: 10 }}>очки</div>
+        <div className="font-mono" style={{ color: "#555", fontSize: 9 }}>очки</div>
       </div>
 
       {/* Рекорд — правый верхний угол */}
       <div className="absolute text-right" style={{ right: 0, top: 4 }}>
-        <div className="font-mono font-medium leading-none" style={{ fontSize: 24, color: "#4a4a4a" }}>
+        <div className="font-mono font-medium leading-none" style={{ fontSize: 16, color: "#4a4a4a" }}>
           {bestScore} <span style={{ color: "#3a3a3a" }}>/</span> {bestCombo}
         </div>
-        <div className="font-mono" style={{ color: "#555", fontSize: 10 }}>рекорд очков / схем</div>
       </div>
 
       {/* Комбо-счётчик — нижний левый угол */}
       <div className="absolute" style={{ left: 0, bottom: 4 }}>
         <div
           className="font-mono font-medium leading-none"
-          style={{ fontSize: 24, color: comboScore > 0 ? "#fff" : "#3a3a3a" }}
+          style={{ fontSize: 16, color: comboScore > 0 ? "#888" : "#3a3a3a" }}
         >
           {comboScore}
         </div>
-        <div className="font-mono" style={{ color: "#555", fontSize: 10 }}>схем</div>
       </div>
 
       {/* Кнопка отмены — нижний правый угол, появляется при 50 очках */}
