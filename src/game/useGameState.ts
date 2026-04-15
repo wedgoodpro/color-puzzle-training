@@ -39,11 +39,11 @@ export function useGameState() {
 
   const cellSize = getCellSize(gridCols);
 
+  // Гравитация к верху: новый блок добавляется в нижнюю свободную строку
   const findTargetRow = useCallback((col: number, g: Grid, rows: number): number => {
-    let top = 0;
-    while (top < rows && g[top][col] !== null) top++;
-    if (top >= rows) return -1;
-    return top;
+    let bottom = rows - 1;
+    while (bottom >= 0 && g[bottom][col] !== null) bottom--;
+    return bottom; // -1 если столбец полон
   }, []);
 
   const triggerScoreAnim = (pts: number) => {
@@ -76,11 +76,129 @@ export function useGameState() {
     }, 600);
   }, []);
 
+  // Чистая функция: притягивает кубики к верху по каждому столбцу
+  const applyGravity = (g: Grid, rows: number, cols: number): Grid => {
+    const next = g.map((r) => [...r]) as Grid;
+    for (let c = 0; c < cols; c++) {
+      const cells = [];
+      for (let r = 0; r < rows; r++) {
+        if (next[r][c] !== null) cells.push(next[r][c]);
+      }
+      for (let r = 0; r < rows; r++) {
+        next[r][c] = r < cells.length ? cells[r] : null;
+      }
+    }
+    return next;
+  };
+
+  // Чистая функция: ищет одно совпадение на всей доске (приоритет: тетрада > триада > пара)
+  // Возвращает { cells, points } или null
+  const findAnyMatch = (g: Grid, rows: number, cols: number): { cells: [number, number][]; points: number } | null => {
+    const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+
+    const findConnected = (startR: number, startC: number, targetColorId: number, allowedColorIds: number[]): [number, number][] => {
+      const allowed = new Set(allowedColorIds);
+      const visited = new Set<string>();
+      const result: [number, number][] = [];
+      const queue: [number, number][] = [[startR, startC]];
+      visited.add(`${startR}-${startC}`);
+      while (queue.length > 0) {
+        const [r, c] = queue.shift()!;
+        for (const [dr, dc] of dirs) {
+          const nr = r + dr; const nc = c + dc;
+          const key = `${nr}-${nc}`;
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited.has(key) && g[nr][nc]) {
+            const nColor = g[nr][nc]!.colorId;
+            if (allowed.has(nColor)) {
+              visited.add(key);
+              if (nColor === targetColorId) result.push([nr, nc]);
+              queue.push([nr, nc]);
+            }
+          }
+        }
+      }
+      return result;
+    };
+
+    // Перебираем все занятые клетки
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        if (!g[row][col]) continue;
+        const colorId = g[row][col]!.colorId;
+
+        const neighbors: { r: number; c: number; colorId: number }[] = [];
+        for (const [dr, dc] of dirs) {
+          const nr = row + dr; const nc = col + dc;
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && g[nr][nc]) {
+            neighbors.push({ r: nr, c: nc, colorId: g[nr][nc]!.colorId });
+          }
+        }
+        const neighborColorIds = neighbors.map((n) => n.colorId);
+
+        // Тетрада
+        const tetrad = getTetrad(colorId);
+        const tetradOthers = tetrad ? tetrad.filter((id) => id !== colorId) : [];
+        if (tetrad) {
+          if (tetradOthers.every((id) => neighborColorIds.includes(id))) {
+            const cells: [number, number][] = [[row, col]];
+            for (const otherId of tetradOthers) {
+              const n = neighbors.find((n) => n.colorId === otherId)!;
+              cells.push([n.r, n.c]);
+            }
+            return { cells, points: POINTS_TETRAD };
+          }
+          const foundCells: Map<number, [number, number]> = new Map([[colorId, [row, col]]]);
+          for (const otherId of tetradOthers) {
+            const found = findConnected(row, col, otherId, tetrad);
+            if (found.length > 0) foundCells.set(otherId, found[0]);
+          }
+          if (foundCells.size === 4) {
+            const cells: [number, number][] = [];
+            foundCells.forEach(([r, c]) => cells.push([r, c]));
+            return { cells, points: POINTS_TETRAD };
+          }
+        }
+
+        // Триада
+        const triad = getTriad(colorId);
+        const triadOthers = triad ? triad.filter((id) => id !== colorId) : [];
+        if (triad) {
+          if (triadOthers.every((id) => neighborColorIds.includes(id))) {
+            const cells: [number, number][] = [[row, col]];
+            for (const otherId of triadOthers) {
+              const n = neighbors.find((n) => n.colorId === otherId)!;
+              cells.push([n.r, n.c]);
+            }
+            return { cells, points: POINTS_TRIAD };
+          }
+          const foundCells: Map<number, [number, number]> = new Map([[colorId, [row, col]]]);
+          for (const otherId of triadOthers) {
+            const found = findConnected(row, col, otherId, triad);
+            if (found.length > 0) foundCells.set(otherId, found[0]);
+          }
+          if (foundCells.size === 3) {
+            const cells: [number, number][] = [];
+            foundCells.forEach(([r, c]) => cells.push([r, c]));
+            return { cells, points: POINTS_TRIAD };
+          }
+        }
+
+        // Пара
+        const complement = getComplement(colorId);
+        const pairNeighbors = neighbors.filter((n) => n.colorId === complement);
+        if (pairNeighbors.length > 0) {
+          const cells: [number, number][] = [[row, col], ...pairNeighbors.map((n): [number, number] => [n.r, n.c])];
+          return { cells, points: POINTS_PAIR * pairNeighbors.length };
+        }
+      }
+    }
+    return null;
+  };
+
   const checkAndPop = useCallback(
     (g: Grid, row: number, col: number, colorId: number, rows: number, cols: number, cs: number) => {
       const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
 
-      // BFS: ищем все клетки с targetColorId, связанные с (startR,startC) через соседей с любым из allowedColorIds
       const findConnected = (startR: number, startC: number, targetColorId: number, allowedColorIds: number[]): [number, number][] => {
         const allowed = new Set(allowedColorIds);
         const visited = new Set<string>();
@@ -90,8 +208,7 @@ export function useGameState() {
         while (queue.length > 0) {
           const [r, c] = queue.shift()!;
           for (const [dr, dc] of dirs) {
-            const nr = r + dr;
-            const nc = c + dc;
+            const nr = r + dr; const nc = c + dc;
             const key = `${nr}-${nc}`;
             if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited.has(key) && g[nr][nc]) {
               const nColor = g[nr][nc]!.colorId;
@@ -108,38 +225,32 @@ export function useGameState() {
 
       const neighbors: { r: number; c: number; colorId: number }[] = [];
       for (const [dr, dc] of dirs) {
-        const nr = row + dr;
-        const nc = col + dc;
+        const nr = row + dr; const nc = col + dc;
         if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && g[nr][nc]) {
           neighbors.push({ r: nr, c: nc, colorId: g[nr][nc]!.colorId });
         }
       }
-
       const neighborColorIds = neighbors.map((n) => n.colorId);
 
       let toRemove: [number, number][] = [];
       let points = 0;
 
-      // Приоритет 1: тетрада — POINTS_TETRAD (6)
+      // Приоритет 1: тетрада
       const tetrad = getTetrad(colorId);
       const tetradOthers = tetrad ? tetrad.filter((id) => id !== colorId) : [];
       if (tetrad) {
-        // Сначала проверяем прямых соседей (классика)
-        const directMatch = tetradOthers.every((id) => neighborColorIds.includes(id));
-        if (directMatch) {
+        if (tetradOthers.every((id) => neighborColorIds.includes(id))) {
           toRemove.push([row, col]);
           for (const otherId of tetradOthers) {
-            const neighbor = neighbors.find((n) => n.colorId === otherId)!;
-            toRemove.push([neighbor.r, neighbor.c]);
+            const n = neighbors.find((n) => n.colorId === otherId)!;
+            toRemove.push([n.r, n.c]);
           }
           points = POINTS_TETRAD;
         } else {
-          // Ищем змейку: каждый цвет тетрады должен быть достижим через цепочку цветов тетрады
-          const foundCells: Map<number, [number, number]> = new Map();
-          foundCells.set(colorId, [row, col]);
+          const foundCells: Map<number, [number, number]> = new Map([[colorId, [row, col]]]);
           for (const otherId of tetradOthers) {
-            const cells = findConnected(row, col, otherId, tetrad);
-            if (cells.length > 0) foundCells.set(otherId, cells[0]);
+            const found = findConnected(row, col, otherId, tetrad);
+            if (found.length > 0) foundCells.set(otherId, found[0]);
           }
           if (foundCells.size === 4) {
             foundCells.forEach(([r, c]) => toRemove.push([r, c]));
@@ -148,26 +259,23 @@ export function useGameState() {
         }
       }
 
-      // Приоритет 2: триада — POINTS_TRIAD (4)
+      // Приоритет 2: триада
       if (toRemove.length === 0) {
         const triad = getTriad(colorId);
         const triadOthers = triad ? triad.filter((id) => id !== colorId) : [];
         if (triad) {
-          const directMatch = triadOthers.every((id) => neighborColorIds.includes(id));
-          if (directMatch) {
+          if (triadOthers.every((id) => neighborColorIds.includes(id))) {
             toRemove.push([row, col]);
             for (const otherId of triadOthers) {
-              const neighbor = neighbors.find((n) => n.colorId === otherId)!;
-              toRemove.push([neighbor.r, neighbor.c]);
+              const n = neighbors.find((n) => n.colorId === otherId)!;
+              toRemove.push([n.r, n.c]);
             }
             points = POINTS_TRIAD;
           } else {
-            // Ищем змейку: каждый цвет триады достижим через цепочку цветов триады
-            const foundCells: Map<number, [number, number]> = new Map();
-            foundCells.set(colorId, [row, col]);
+            const foundCells: Map<number, [number, number]> = new Map([[colorId, [row, col]]]);
             for (const otherId of triadOthers) {
-              const cells = findConnected(row, col, otherId, triad);
-              if (cells.length > 0) foundCells.set(otherId, cells[0]);
+              const found = findConnected(row, col, otherId, triad);
+              if (found.length > 0) foundCells.set(otherId, found[0]);
             }
             if (foundCells.size === 3) {
               foundCells.forEach(([r, c]) => toRemove.push([r, c]));
@@ -177,7 +285,7 @@ export function useGameState() {
         }
       }
 
-      // Приоритет 3: пара — POINTS_PAIR (1)
+      // Приоритет 3: пара
       if (toRemove.length === 0) {
         const complement = getComplement(colorId);
         for (const n of neighbors) {
@@ -191,35 +299,46 @@ export function useGameState() {
 
       if (toRemove.length === 0) return;
 
-      const seen = new Set<string>();
-      toRemove = toRemove.filter(([r, c]) => {
-        const k = `${r}-${c}`;
-        if (seen.has(k)) return false;
-        seen.add(k);
-        return true;
-      });
+      const dedup = (arr: [number, number][]) => {
+        const seen = new Set<string>();
+        return arr.filter(([r, c]) => { const k = `${r}-${c}`; if (seen.has(k)) return false; seen.add(k); return true; });
+      };
+      toRemove = dedup(toRemove);
 
-      setPoppingCells(new Set(toRemove.map(([r, c]) => `${r}-${c}`)));
-      spawnParticles(toRemove, g, cs);
+      // Запускаем каскад: анимация → удаление → гравитация → повтор
+      const runCascade = (currentGrid: Grid, removeCells: [number, number][], pts: number, delay: number) => {
+        setPoppingCells(new Set(removeCells.map(([r, c]) => `${r}-${c}`)));
+        spawnParticles(removeCells, currentGrid, cs);
+        const removedColors = new Set(removeCells.map(([r, c]) => currentGrid[r][c]!.colorId));
+        setLitColorIds(removedColors);
+        setTimeout(() => setLitColorIds(new Set()), 900);
 
-      const removedColorIds = new Set(toRemove.map(([r, c]) => g[r][c]!.colorId));
-      setLitColorIds(removedColorIds);
-      setTimeout(() => setLitColorIds(new Set()), 900);
+        setTimeout(() => {
+          // Удаляем совпавшие ячейки
+          const afterRemove = currentGrid.map((r) => [...r]) as Grid;
+          removeCells.forEach(([r, c]) => { afterRemove[r][c] = null; });
+          setPoppingCells(new Set());
 
-      setTimeout(() => {
-        setGrid((prev) => {
-          const next = prev.map((r) => [...r]) as Grid;
-          toRemove.forEach(([r, c]) => { next[r][c] = null; });
-          return next;
-        });
-        setPoppingCells(new Set());
-        setScore((s) => {
-          const newScore = s + points;
-          scoreRef.current = newScore;
-          return newScore;
-        });
-        triggerScoreAnim(points);
-      }, 320);
+          // Гравитация
+          const afterGravity = applyGravity(afterRemove, rows, cols);
+
+          setGrid(afterGravity);
+          setScore((s) => {
+            const newScore = s + pts;
+            scoreRef.current = newScore;
+            return newScore;
+          });
+          triggerScoreAnim(pts);
+
+          // Ищем новые совпадения после гравитации
+          const nextMatch = findAnyMatch(afterGravity, rows, cols);
+          if (nextMatch) {
+            runCascade(afterGravity, nextMatch.cells, nextMatch.points, 350);
+          }
+        }, delay);
+      };
+
+      runCascade(g, toRemove, points, 320);
     },
     [spawnParticles]
   );
@@ -264,10 +383,10 @@ export function useGameState() {
     [flyingTile, gameOver, newColorsNotice, grid, gridRows, gridCols, currentColorId, findTargetRow, checkAndPop]
   );
 
-  // Проверка game over — последняя строка заполнена
+  // Проверка game over — верхняя строка заполнена (гравитация к верху)
   useEffect(() => {
     if (!gameOver && !flyingTile) {
-      const lastRowFull = grid[gridRows - 1]?.every((cell) => cell !== null);
+      const lastRowFull = grid[0]?.every((cell) => cell !== null);
       if (lastRowFull) {
         saveScore(score);
         const updated = loadScores();
