@@ -429,7 +429,7 @@ export function useGameState() {
       const currentGrid = gridRef.current.map((r) => [...r]) as Grid;
 
       // Запускаем летящий кубик — он виден пока летит, потом ставится в грид
-      const FLY_MS = 280;
+      const FLY_MS = 320;
       setFlyingTile({ col, colorId, targetRow, progress: 0 });
 
       setTimeout(() => {

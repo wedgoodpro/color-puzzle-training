@@ -42,29 +42,29 @@ export default function GameBoard({
   const boardW = boardPx;
   const boardH = rows * (cellSize + GAP) - GAP;
 
-  // Анимация летящего кубика: сначала внизу, потом transition на место
-  const [flyY, setFlyY] = useState<number | null>(null);
-  const [flyActive, setFlyActive] = useState(false);
+  // Анимация летящего кубика через translateY
+  const [flyOffset, setFlyOffset] = useState<number>(0);
+  const [flyAnimating, setFlyAnimating] = useState(false);
 
   useEffect(() => {
     if (!flyingTile) {
-      setFlyActive(false);
-      setFlyY(null);
+      setFlyAnimating(false);
       return;
     }
     const landY = flyingTile.targetRow * (cellSize + GAP);
-    const startY = boardH + GAP; // ниже поля
-    setFlyY(startY);
-    setFlyActive(false);
-    // После одного кадра запускаем transition на целевую позицию
+    const startOffset = boardH + GAP - landY; // сколько пикселей ниже целевой позиции
+    // Сначала без transition — ставим кубик внизу
+    setFlyOffset(startOffset);
+    setFlyAnimating(false);
+    // Следующий кадр — запускаем transition к 0
     const raf = requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        setFlyY(landY);
-        setFlyActive(true);
+        setFlyOffset(0);
+        setFlyAnimating(true);
       });
     });
     return () => cancelAnimationFrame(raf);
-  }, [flyingTile?.col, flyingTile?.colorId, flyingTile?.targetRow]);
+  }, [flyingTile ? `${flyingTile.col}-${flyingTile.colorId}-${flyingTile.targetRow}` : null]);
   const colorCells: {
     key: string; ci: number; ri: number;
     colorId: number; isPopping: boolean; dropFrom?: number;
@@ -152,19 +152,20 @@ export default function GameBoard({
         );
       })}
 
-      {/* Летящий кубик — transition снизу вверх с отскоком */}
-      {flyingTile && flyY !== null && (
+      {/* Летящий кубик — translateY снизу вверх с пружинным отскоком */}
+      {flyingTile && (
         <div
           className="absolute pointer-events-none rounded-sm"
           style={{
             left: flyingTile.col * (cellSize + GAP),
-            top: flyY,
+            top: flyingTile.targetRow * (cellSize + GAP),
             width: cellSize,
             height: cellSize,
             backgroundColor: ITTEN_COLORS[flyingTile.colorId].hex,
             zIndex: 10,
-            transition: flyActive
-              ? "top 260ms cubic-bezier(0.22,1,0.36,1)"
+            transform: `translateY(${flyOffset}px)`,
+            transition: flyAnimating
+              ? "transform 300ms cubic-bezier(0.34,1.56,0.64,1)"
               : "none",
           }}
         />
