@@ -18,6 +18,7 @@ export default function Index() {
     scoreAnim,
     lastPoints,
     poppingCells,
+    litCells,
     gravityMs,
     flyingTile,
     particles,
@@ -92,6 +93,7 @@ export default function Index() {
               flyingTile={flyingTile}
               particles={particles}
               poppingCells={poppingCells}
+              litCells={litCells}
               gravityMs={gravityMs}
               hoverCol={hoverCol}
               reviewCells={reviewCells}

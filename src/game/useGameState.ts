@@ -42,6 +42,7 @@ export function useGameState() {
   const [scoreAnim, setScoreAnim] = useState(false);
   const [lastPoints, setLastPoints] = useState<number | null>(null);
   const [poppingCells, setPoppingCells] = useState<Set<string>>(new Set());
+  const [litCells, setLitCells] = useState<Set<string>>(new Set());
   const [gravityMs, setGravityMs] = useState(0);
   const [flyingTile, setFlyingTile] = useState<FlyingTile | null>(null);
   const flyIdRef = useRef(0);
@@ -438,43 +439,48 @@ export function useGameState() {
       }
       const newRow = filledCount - 1;
 
-      // Предсказываем совпадение и сразу подсвечиваем круг — ещё во время полёта
+      // Предсказываем совпадение — подсвечиваем круг сразу, ячейки при приземлении
       const previewGrid = afterGravity.map((r) =>
         r.map((cell) => cell ? { colorId: cell.colorId } : null)
       ) as Grid;
-      const previewColors = (() => {
+      const previewMatch = (() => {
         // Тетрада
         for (const tetrad of getTetradsForColor(colorId)) {
           const cells = findGroupOnBoard(previewGrid, rows, cols, tetrad);
           if (cells?.some(([r, c]) => r === newRow && c === col))
-            return new Set(cells.map(([r, c]) => previewGrid[r][c]!.colorId));
+            return { cells, colors: new Set(cells.map(([r, c]) => previewGrid[r][c]!.colorId)) };
         }
         // Триада
         for (const triad of getTriadsForColor(colorId)) {
           const cells = findGroupOnBoard(previewGrid, rows, cols, triad);
           if (cells?.some(([r, c]) => r === newRow && c === col))
-            return new Set(cells.map(([r, c]) => previewGrid[r][c]!.colorId));
+            return { cells, colors: new Set(cells.map(([r, c]) => previewGrid[r][c]!.colorId)) };
         }
         // Пара
         const complement = getComplement(colorId);
-        for (const [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+        for (const [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1]] as [number,number][]) {
           const nr = newRow + dr; const nc = col + dc;
           if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && previewGrid[nr][nc]?.colorId === complement)
-            return new Set([colorId, complement]);
+            return { cells: [[newRow, col], [nr, nc]] as [number,number][], colors: new Set([colorId, complement]) };
         }
         return null;
       })();
-      if (previewColors) setLitColorIds(previewColors);
+      if (previewMatch) setLitColorIds(previewMatch.colors);
 
       // Летящий кубик анимируется до финальной позиции (после гравитации)
       const FLY_MS = 320;
       flyIdRef.current += 1;
       const bumpRow = afterGravity[newRow + 1]?.[col] != null ? newRow + 1 : null;
-      setFlyingTile({ col, colorId, targetRow: newRow, progress: flyIdRef.current, bumpRow, willMatch: !!previewColors });
+      setFlyingTile({ col, colorId, targetRow: newRow, progress: flyIdRef.current, bumpRow, willMatch: !!previewMatch });
 
       setTimeout(() => {
         setFlyingTile(null);
-        // Чистый грид без dropFrom + сразу проверяем совпадения
+        // При приземлении — мгновенно подсвечиваем ячейки совпадения
+        if (previewMatch) {
+          setLitCells(new Set(previewMatch.cells.map(([r, c]) => `${r}-${c}`)));
+          // Гасим подсветку ячеек когда pop-анимация уже играет
+          setTimeout(() => setLitCells(new Set()), 200);
+        }
         const cleanGrid = afterGravity.map((r) =>
           r.map((cell) => cell ? { colorId: cell.colorId } : null)
         ) as Grid;
@@ -654,6 +660,7 @@ export function useGameState() {
     scoreAnim,
     lastPoints,
     poppingCells,
+    litCells,
     gravityMs,
     flyingTile,
     particles,

@@ -14,6 +14,7 @@ interface GameBoardProps {
   flyingTile: FlyingTile | null;
   particles: Particle[];
   poppingCells: Set<string>;
+  litCells: Set<string>;
   gravityMs: number;
   hoverCol: number | null;
   reviewCells?: Set<string>;
@@ -69,6 +70,7 @@ export default function GameBoard({
   flyingTile,
   particles,
   poppingCells,
+  litCells,
   gravityMs,
   hoverCol,
   reviewCells,
@@ -155,7 +157,7 @@ export default function GameBoard({
         }
 
         const hex = ITTEN_COLORS[colorId].hex;
-        // Ударяемая ячейка получает уникальный key чтобы React пересоздал DOM-элемент
+        const isLit = litCells.has(cellKey);
         const elemKey = isBumped ? `${key}-bump-${flyingTile!.progress}` : key;
         return (
           <div
@@ -171,6 +173,8 @@ export default function GameBoard({
               ["--drop" as string]: dropFrom !== undefined ? `${dropFrom}px` : "0px",
               ["--glow" as string]: hex,
               zIndex: isReview ? 3 : 2,
+              boxShadow: isLit ? `0 0 6px 2px ${hex}, 0 0 12px 4px ${hex}66` : undefined,
+              transition: isLit ? "box-shadow 80ms ease-out" : "box-shadow 150ms ease-in",
             }}
           />
         );
