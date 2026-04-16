@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   BOARD_W, BOARD_H, GAP,
   ITTEN_COLORS, CELL_EMPTY, CELL_EMPTY_HOVER,
@@ -40,7 +40,31 @@ export default function GameBoard({
   boardRef,
 }: GameBoardProps) {
   const boardW = boardPx;
-  const boardH = boardPx;
+  const boardH = rows * (cellSize + GAP) - GAP;
+
+  // Анимация летящего кубика: сначала внизу, потом transition на место
+  const [flyY, setFlyY] = useState<number | null>(null);
+  const [flyActive, setFlyActive] = useState(false);
+
+  useEffect(() => {
+    if (!flyingTile) {
+      setFlyActive(false);
+      setFlyY(null);
+      return;
+    }
+    const landY = flyingTile.targetRow * (cellSize + GAP);
+    const startY = boardH + GAP; // ниже поля
+    setFlyY(startY);
+    setFlyActive(false);
+    // После одного кадра запускаем transition на целевую позицию
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setFlyY(landY);
+        setFlyActive(true);
+      });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [flyingTile?.col, flyingTile?.colorId, flyingTile?.targetRow]);
   const colorCells: {
     key: string; ci: number; ri: number;
     colorId: number; isPopping: boolean; dropFrom?: number;
@@ -128,30 +152,23 @@ export default function GameBoard({
         );
       })}
 
-      {/* Летящий кубик — стартует снизу поля, летит вверх до targetRow */}
-      {flyingTile && (() => {
-        const { col, colorId, targetRow } = flyingTile;
-        const hex = ITTEN_COLORS[colorId].hex;
-        const landY = targetRow * (cellSize + GAP);
-        const startY = boardH; // ниже поля
-        const travelPx = landY - startY; // отрицательное — движение вверх
-        return (
-          <div
-            key={`fly-${col}-${colorId}`}
-            className="absolute pointer-events-none rounded-sm"
-            style={{
-              left: col * (cellSize + GAP),
-              top: startY,
-              width: cellSize,
-              height: cellSize,
-              backgroundColor: hex,
-              zIndex: 10,
-              animation: "tile-fall 280ms linear forwards",
-              ["--travel" as string]: `${travelPx}px`,
-            }}
-          />
-        );
-      })()}
+      {/* Летящий кубик — transition снизу вверх с отскоком */}
+      {flyingTile && flyY !== null && (
+        <div
+          className="absolute pointer-events-none rounded-sm"
+          style={{
+            left: flyingTile.col * (cellSize + GAP),
+            top: flyY,
+            width: cellSize,
+            height: cellSize,
+            backgroundColor: ITTEN_COLORS[flyingTile.colorId].hex,
+            zIndex: 10,
+            transition: flyActive
+              ? "top 260ms cubic-bezier(0.22,1,0.36,1)"
+              : "none",
+          }}
+        />
+      )}
 
       {/* Particles */}
       {particles.map((p) => {

@@ -220,14 +220,7 @@ export default function Index() {
           0%   { transform: translateY(var(--drop, 0px)); }
           100% { transform: translateY(0); }
         }
-        @keyframes tile-fall {
-          0%   { transform: translateY(0); }
-          70%  { transform: translateY(var(--travel)); }
-          80%  { transform: translateY(calc(var(--travel) - 10px)); }
-          90%  { transform: translateY(calc(var(--travel) + 5px)); }
-          95%  { transform: translateY(calc(var(--travel) - 3px)); }
-          100% { transform: translateY(var(--travel)); }
-        }
+
         @keyframes review-pulse {
           0%   { transform: scale(1); }
           45%  { transform: scale(0.7); }
