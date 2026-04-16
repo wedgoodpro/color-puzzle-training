@@ -1,3 +1,4 @@
+import { useState } from "react";
 import GameBoard from "@/game/GameBoard";
 import { GameOverModal } from "@/game/GameOverlay";
 import { BG } from "@/game/constants";
@@ -41,6 +42,16 @@ export default function Index() {
     reviewCells,
     handleReviewTap,
   } = useGameState();
+
+  const [copied, setCopied] = useState(false);
+  const shareUrl = "https://fotovuz.ru/igra-kolorist";
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   return (
     <div
@@ -108,6 +119,43 @@ export default function Index() {
             }}
           >
             хочешь научиться фотографировать?
+          </a>
+
+          <button
+            onClick={handleShare}
+            className="font-mono uppercase text-center"
+            style={{
+              width: boardPx,
+              fontSize: 11.5,
+              color: copied ? "#888" : "#555",
+              letterSpacing: "0.18em",
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              transition: "color 0.2s",
+            }}
+          >
+            {copied ? "ссылка скопирована!" : "отправить другу"}
+          </button>
+
+          <a
+            href={shareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono uppercase text-center"
+            style={{
+              width: boardPx,
+              fontSize: 11.5,
+              color: "#555",
+              letterSpacing: "0.18em",
+              textDecoration: "none",
+              display: "block",
+              whiteSpace: "nowrap",
+            }}
+          >
+            инструкция
           </a>
         </div>
       </div>
