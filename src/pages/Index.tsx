@@ -48,7 +48,7 @@ export default function Index() {
       style={{ backgroundColor: BG }}
     >
       <div className="w-full max-w-xl px-3 flex-1 flex flex-col items-center">
-        <div className="flex flex-col items-center gap-4 w-full pt-1">
+        <div className="flex flex-col items-center gap-4 w-full pt-4">
 
           <WheelPanel
             litColorIds={litColorIds}
