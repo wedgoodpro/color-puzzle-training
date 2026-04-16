@@ -285,11 +285,11 @@ export function useGameState() {
       };
       toRemove = dedup(toRemove);
 
-      // Длительность гравитации и задержка зависят от типа совпадения
+      // Pop-анимация начинается мгновенно, удаление — через 400ms (длительность pop)
       const getTimings = (pts: number) => {
-        if (pts >= POINTS_TETRAD) return { popDelay: 750, gravMs: 600 };
-        if (pts >= POINTS_TRIAD)  return { popDelay: 600, gravMs: 480 };
-        return                           { popDelay: 450, gravMs: 360 };
+        if (pts >= POINTS_TETRAD) return { popDelay: 400, gravMs: 600 };
+        if (pts >= POINTS_TRIAD)  return { popDelay: 400, gravMs: 480 };
+        return                           { popDelay: 400, gravMs: 360 };
       };
 
       // Запускаем каскад: анимация → (пауза для триады/тетрады) → удаление → гравитация → повтор
@@ -388,14 +388,17 @@ export function useGameState() {
         };
 
         if (isTriadOrTetrad) {
-          // Сразу ставим паузу — квадраты видны с pop-анимацией, ждём тапа
+          // Показываем pop-анимацию сразу, пауза только пока анимация играет
           const cellKeys = new Set(removeCells.map(([r, c]) => `${r}-${c}`));
           setReviewCells(cellKeys);
           reviewPendingRef.current = true;
           setReviewPending(true);
-          reviewResolveRef.current = proceed;
+          // Автоматически продолжаем через popDelay — тап тоже работает
+          const autoTimer = setTimeout(() => {
+            if (reviewPendingRef.current) proceed();
+          }, popDelay);
+          reviewResolveRef.current = () => { clearTimeout(autoTimer); proceed(); };
         } else {
-          // Пара: обычная автоматическая анимация
           setTimeout(() => setLitColorIds(new Set()), gravMs + popDelay);
           setTimeout(proceed, popDelay);
         }
