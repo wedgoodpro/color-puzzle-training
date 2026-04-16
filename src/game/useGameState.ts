@@ -447,22 +447,30 @@ export function useGameState() {
         for (const tetrad of getTetradsForColor(colorId)) {
           const cells = findGroupOnBoard(previewGrid, rows, cols, tetrad);
           if (cells?.some(([r, c]) => r === newRow && c === col))
-            return new Set(cells.map(([r, c]) => previewGrid[r][c]!.colorId));
+            return { colors: new Set(cells.map(([r, c]) => previewGrid[r][c]!.colorId)), isPair: false, cells: null };
         }
         for (const triad of getTriadsForColor(colorId)) {
           const cells = findGroupOnBoard(previewGrid, rows, cols, triad);
           if (cells?.some(([r, c]) => r === newRow && c === col))
-            return new Set(cells.map(([r, c]) => previewGrid[r][c]!.colorId));
+            return { colors: new Set(cells.map(([r, c]) => previewGrid[r][c]!.colorId)), isPair: false, cells: null };
         }
         const complement = getComplement(colorId);
         for (const [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1]] as [number,number][]) {
           const nr = newRow + dr; const nc = col + dc;
           if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && previewGrid[nr][nc]?.colorId === complement)
-            return new Set([colorId, complement]);
+            return { colors: new Set([colorId, complement]), isPair: true, cells: [[newRow, col], [nr, nc]] as [number,number][] };
         }
         return null;
       })();
-      if (previewColors) setLitColorIds(previewColors);
+      if (previewColors) setLitColorIds(previewColors.colors);
+
+      // Для пары — запускаем pop-анимацию уже существующего соседа сразу во время полёта
+      if (previewColors?.isPair && previewColors.cells) {
+        const neighborKey = previewColors.cells
+          .map(([r, c]) => `${r}-${c}`)
+          .filter(k => k !== `${newRow}-${col}`);
+        if (neighborKey.length) setPoppingCells(new Set(neighborKey));
+      }
 
       // Летящий кубик анимируется до финальной позиции (после гравитации)
       const FLY_MS = 320;
