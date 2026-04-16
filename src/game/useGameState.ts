@@ -4,7 +4,7 @@ import {
   POINTS_PAIR, POINTS_TRIAD, POINTS_TETRAD,
   Cell, Grid, Particle,
   getComplement, getTriad, getTriadsForColor, getTetrad, getTetradsForColor,
-  getActiveColorIds, randColorIdFromActive, isWarm, isCool, randFromPool,
+  getActiveColorIds, randColorIdFromActive, randFromPool,
   emptyGrid, loadScores, getBestScore, saveScore,
   getGridSize, getCellSize, GAP,
   getBestCombo, saveBestCombo,
@@ -437,19 +437,18 @@ export function useGameState() {
       }, 320);
 
       // Следующий цвет становится текущим, генерируем новый следующий
-      // Чередование тёплый↔холодный: после тёплого — холодный и наоборот
-      const pickNextId = (afterColorId: number, activeIds: number[]): number => {
-        const needCool = isWarm(afterColorId);
-        const targetPool = activeIds.filter((id) => needCool ? isCool(id) : isWarm(id));
-        // Если нужных цветов нет в активных — берём любой
-        const pool = targetPool.length > 0 ? targetPool : activeIds;
-        // Не повторять тот же цвет подряд
-        const filtered = pool.filter((id) => id !== afterColorId);
-        return randFromPool(filtered.length > 0 ? filtered : pool);
+      // Запоминаем последние 3 упавших цвета — они не могут выпасть снова
+      const last3 = [...lastTwoColorsRef.current, colorId].slice(-3);
+      lastTwoColorsRef.current = last3;
+      const excluded = new Set(last3);
+
+      const pickNextId = (activeIds: number[]): number => {
+        const pool = activeIds.filter((id) => !excluded.has(id));
+        return randFromPool(pool.length > 0 ? pool : activeIds);
       };
 
       const safeNextColorId = nextColorId;
-      const newNextId = pickNextId(safeNextColorId, activeColorIds);
+      const newNextId = pickNextId(activeColorIds);
 
       setCurrentColorId(safeNextColorId);
       setNextColorId(newNextId);
@@ -528,10 +527,7 @@ export function useGameState() {
     setGridCols(cols);
     setGridRows(rows);
     const firstColor = randColorIdFromActive(startIds);
-    const secondPool = startIds.filter((id) => isWarm(firstColor) ? isCool(id) : isWarm(id));
-    const secondColor = secondPool.length > 0
-      ? randFromPool(secondPool)
-      : randColorIdFromActive(startIds, firstColor);
+    const secondColor = randColorIdFromActive(startIds, firstColor);
     setCurrentColorId(firstColor);
     setNextColorId(secondColor);
     setScore(0);
