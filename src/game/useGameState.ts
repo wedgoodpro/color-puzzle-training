@@ -446,18 +446,19 @@ export function useGameState() {
       }, 320);
 
       // Следующий цвет становится текущим, генерируем новый следующий
-      // Запоминаем последние 3 упавших цвета — они не могут выпасть снова
-      const last3 = [...lastTwoColorsRef.current, colorId].slice(-3);
-      lastTwoColorsRef.current = last3;
-      const excluded = new Set(last3);
+      // История последних 4 упавших цветов — исключаем их из следующего выбора
+      const last4 = [...lastTwoColorsRef.current, colorId].slice(-4);
+      lastTwoColorsRef.current = last4;
 
-      const pickNextId = (activeIds: number[]): number => {
+      const pickNextId = (activeIds: number[], history: number[]): number => {
+        const excluded = new Set(history);
         const pool = activeIds.filter((id) => !excluded.has(id));
         return randFromPool(pool.length > 0 ? pool : activeIds);
       };
 
       const safeNextColorId = nextColorId;
-      const newNextId = pickNextId(activeColorIds);
+      // При генерации нового "следующего" учитываем и safeNextColorId — он будет текущим
+      const newNextId = pickNextId(activeColorIds, [...last4, safeNextColorId]);
 
       setCurrentColorId(safeNextColorId);
       setNextColorId(newNextId);
