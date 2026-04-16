@@ -60,13 +60,13 @@ export default function WheelPanel({
             className="absolute rounded-sm"
             onClick={swapUnlocked && litColorIds.size === 0 ? onSwap : undefined}
             style={{
-              width: sqSize,
-              height: sqSize,
+              width: sqSize * 0.78,
+              height: sqSize * 0.78,
               top: "50%",
               left: "50%",
               transform: `translate(calc(-50% + ${nextOffset}px), calc(-50% + ${nextOffset}px))`,
               backgroundColor: nextColor.hex,
-              opacity: litColorIds.size > 0 ? 0 : 0.85,
+              opacity: litColorIds.size > 0 ? 0 : 0.75,
               transition: "background-color 0.25s ease, opacity 0.25s ease",
               cursor: swapUnlocked ? "pointer" : "default",
             }}
@@ -87,6 +87,8 @@ export default function WheelPanel({
             transition: "background-color 0.25s ease, opacity 0.25s ease",
             opacity: litColorIds.size > 0 ? 0 : 1,
             cursor: swapUnlocked ? "pointer" : "default",
+            outline: `3px solid #2A2A2A`,
+            outlineOffset: "-1px",
           }}
         >
           {/* Иконка свапа */}
