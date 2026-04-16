@@ -446,9 +446,8 @@ export function useGameState() {
       }, 320);
 
       // Следующий цвет становится текущим, генерируем новый следующий
-      // История последних 2 упавших — один цвет не может выпасть 3 хода подряд
-      const last2 = [...lastTwoColorsRef.current, colorId].slice(-2);
-      lastTwoColorsRef.current = last2;
+      // Цвет не может повторяться 1 ход — каждый следующий отличается от предыдущего
+      lastTwoColorsRef.current = [colorId];
 
       const pickNextId = (activeIds: number[], history: number[]): number => {
         const excluded = new Set(history);
@@ -457,7 +456,7 @@ export function useGameState() {
       };
 
       const safeNextColorId = nextColorId;
-      const newNextId = pickNextId(activeColorIds, [...last2, safeNextColorId]);
+      const newNextId = pickNextId(activeColorIds, [colorId, safeNextColorId]);
 
       setCurrentColorId(safeNextColorId);
       setNextColorId(newNextId);
