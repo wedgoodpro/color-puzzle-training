@@ -287,11 +287,11 @@ export function useGameState() {
       };
       toRemove = dedup(toRemove);
 
-      // Пара: pop сразу, удаление через 400ms. Триада/тетрада: пауза для тапа
+      // Пара: pop сразу, удаление через 550ms (длина pop-анимации). Триада/тетрада: пауза для тапа
       const getTimings = (pts: number) => {
         if (pts >= POINTS_TETRAD) return { popDelay: 750, gravMs: 600 };
         if (pts >= POINTS_TRIAD)  return { popDelay: 600, gravMs: 480 };
-        return                           { popDelay: 400, gravMs: 360 };
+        return                           { popDelay: 550, gravMs: 360 };
       };
 
       // Запускаем каскад: анимация → (пауза для триады/тетрады) → удаление → гравитация → повтор
@@ -464,12 +464,12 @@ export function useGameState() {
       })();
       if (previewColors) setLitColorIds(previewColors.colors);
 
-      // Для пары — запускаем pop-анимацию уже существующего соседа сразу во время полёта
+      // Для пары — запускаем pop соседа во время полёта, чтоб оба исчезли сразу при приземлении
       if (previewColors?.isPair && previewColors.cells) {
-        const neighborKey = previewColors.cells
+        const neighborKeys = previewColors.cells
           .map(([r, c]) => `${r}-${c}`)
           .filter(k => k !== `${newRow}-${col}`);
-        if (neighborKey.length) setPoppingCells(new Set(neighborKey));
+        if (neighborKeys.length) setPoppingCells(new Set(neighborKeys));
       }
 
       // Летящий кубик анимируется до финальной позиции (после гравитации)
