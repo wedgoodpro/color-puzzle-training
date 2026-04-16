@@ -47,6 +47,7 @@ export function useGameState() {
   const [gravityMs, setGravityMs] = useState(0);
   const [flyingTile, setFlyingTile] = useState<FlyingTile | null>(null);
   const flyIdRef = useRef(0);
+  const isBusyRef = useRef(false);
   const [particles, setParticles] = useState<Particle[]>([]);
   const particleIdRef = useRef(0);
   const [gameOver, setGameOver] = useState(false);
@@ -279,7 +280,7 @@ export function useGameState() {
         }
       }
 
-      if (toRemove.length === 0) return;
+      if (toRemove.length === 0) { isBusyRef.current = false; return; }
 
       const dedup = (arr: [number, number][]) => {
         const seen = new Set<string>();
@@ -384,6 +385,7 @@ export function useGameState() {
             } else {
               setGravityMs(0);
               setGameOver(cleanGrid.every((r) => r.every((c) => c !== null)));
+              isBusyRef.current = false;
             }
           }, gravMs + 50);
         };
@@ -409,7 +411,7 @@ export function useGameState() {
 
   const handleColumnClick = useCallback(
     (col: number) => {
-      if (gameOver || newColorsNotice) return;
+      if (gameOver || newColorsNotice || isBusyRef.current) return;
       const targetRow = findTargetRow(col, gridRef.current);
       if (targetRow === -1) return;
 
@@ -467,32 +469,17 @@ export function useGameState() {
       // Летящий кубик анимируется до финальной позиции (после гравитации)
       const FLY_MS = 300;
       flyIdRef.current += 1;
+      isBusyRef.current = true;
       setFlyingTile({ col, colorId, targetRow: newRow, progress: flyIdRef.current, willMatch: false });
 
-      if (previewColors?.isPair && previewColors.cells) {
-        // Для пары: в момент приземления сразу pop соседа, checkAndPop добавит летящий
-        const neighborKeys = previewColors.cells
-          .map(([r, c]) => `${r}-${c}`)
-          .filter(k => k !== `${newRow}-${col}`);
-        setTimeout(() => {
-          if (neighborKeys.length) setPoppingCells(new Set(neighborKeys));
-          setFlyingTile(null);
-          const cleanGrid = afterGravity.map((r) =>
-            r.map((cell) => cell ? { colorId: cell.colorId } : null)
-          ) as Grid;
-          setGrid(cleanGrid);
-          checkAndPop(cleanGrid, newRow, col, colorId, rows, cols, cs);
-        }, FLY_MS);
-      } else {
-        setTimeout(() => {
-          setFlyingTile(null);
-          const cleanGrid = afterGravity.map((r) =>
-            r.map((cell) => cell ? { colorId: cell.colorId } : null)
-          ) as Grid;
-          setGrid(cleanGrid);
-          checkAndPop(cleanGrid, newRow, col, colorId, rows, cols, cs);
-        }, FLY_MS);
-      }
+      setTimeout(() => {
+        setFlyingTile(null);
+        const cleanGrid = afterGravity.map((r) =>
+          r.map((cell) => cell ? { colorId: cell.colorId } : null)
+        ) as Grid;
+        setGrid(cleanGrid);
+        checkAndPop(cleanGrid, newRow, col, colorId, rows, cols, cs);
+      }, FLY_MS);
 
       // Следующий цвет становится текущим, генерируем новый следующий
       // Обновляем историю последних 2 и счётчик частот
@@ -626,6 +613,7 @@ export function useGameState() {
     scoreRef.current = 0;
     setComboScore(0);
     setPoppingCells(new Set());
+    isBusyRef.current = false;
     setGameOver(false);
     setLastPoints(null);
     setUndoSnapshot(null);
