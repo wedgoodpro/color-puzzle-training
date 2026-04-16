@@ -225,11 +225,6 @@ export default function Index() {
           0%   { opacity: 1; }
           100% { opacity: 0.75; }
         }
-        @keyframes bump {
-          0%   { transform: translateY(0); }
-          40%  { transform: translateY(5px); }
-          100% { transform: translateY(0); }
-        }
         @keyframes review-pulse {
           0%   { transform: scale(1); }
           45%  { transform: scale(0.7); }

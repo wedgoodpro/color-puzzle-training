@@ -475,8 +475,7 @@ export function useGameState() {
       // Летящий кубик анимируется до финальной позиции (после гравитации)
       const FLY_MS = 320;
       flyIdRef.current += 1;
-      const bumpRow = afterGravity[newRow + 1]?.[col] != null ? newRow + 1 : null;
-      setFlyingTile({ col, colorId, targetRow: newRow, progress: flyIdRef.current, bumpRow, willMatch: false });
+      setFlyingTile({ col, colorId, targetRow: newRow, progress: flyIdRef.current, willMatch: false });
 
       setTimeout(() => {
         setFlyingTile(null);

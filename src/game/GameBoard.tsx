@@ -86,10 +86,7 @@ export default function GameBoard({
   const actualRows = grid.length;
   const actualCols = grid[0]?.length ?? 0;
 
-  // Ячейка которая получит анимацию удара
-  const bumpKey = flyingTile?.bumpRow != null
-    ? `${flyingTile.bumpRow}-${flyingTile.col}`
-    : null;
+
 
   for (let ci = 0; ci < actualCols; ci++) {
     let slotIdx = 0;
@@ -141,20 +138,17 @@ export default function GameBoard({
         const dur = gravityMs > 0 ? gravityMs : 300;
         const cellKey = `${ri}-${ci}`;
         const isReview = !!reviewCells?.has(cellKey);
-        const isBumped = cellKey === bumpKey;
         let anim: string | undefined;
         if (isReview) {
           anim = "review-pulse 0.7s ease-in-out infinite";
         } else if (isPopping) {
           anim = "pop 0.55s cubic-bezier(0.36,0.07,0.19,0.97) forwards";
-        } else if (isBumped) {
-          anim = `bump 220ms cubic-bezier(0.36,0.07,0.19,0.97) ${Math.round(300 * 0.72)}ms both`;
         } else if (dropFrom !== undefined) {
           anim = `slideUp ${dur}ms cubic-bezier(0.34,1.4,0.64,1) forwards`;
         }
 
         const hex = ITTEN_COLORS[colorId].hex;
-        const elemKey = isBumped ? `${key}-bump-${flyingTile!.progress}` : key;
+        const elemKey = key;
         return (
           <div
             key={elemKey}

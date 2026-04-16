@@ -95,7 +95,6 @@ export interface FlyingTile {
   colorId: number;
   targetRow: number;
   progress: number;
-  bumpRow: number | null; // строка кубика который получит удар
   willMatch: boolean;     // летит в совпадение — подсветить свечением
 }
 
