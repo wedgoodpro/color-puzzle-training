@@ -429,21 +429,22 @@ export function useGameState() {
 
       const currentGrid = gridRef.current.map((r) => [...r]) as Grid;
 
-      // Запускаем летящий кубик — он виден пока летит, потом ставится в грид
+      // Вычисляем финальную строку после гравитации ДО запуска анимации
+      currentGrid[targetRow][col] = { colorId };
+      const afterGravity = applyGravity(currentGrid, rows, cols);
+      let filledCount = 0;
+      for (let r = 0; r < rows; r++) {
+        if (afterGravity[r][col] !== null) filledCount++;
+      }
+      const newRow = filledCount - 1;
+
+      // Летящий кубик анимируется до финальной позиции (после гравитации)
       const FLY_MS = 320;
       flyIdRef.current += 1;
-      setFlyingTile({ col, colorId, targetRow, progress: flyIdRef.current });
+      setFlyingTile({ col, colorId, targetRow: newRow, progress: flyIdRef.current });
 
       setTimeout(() => {
         setFlyingTile(null);
-
-        currentGrid[targetRow][col] = { colorId };
-        const afterGravity = applyGravity(currentGrid, rows, cols);
-        let filledCount = 0;
-        for (let r = 0; r < rows; r++) {
-          if (afterGravity[r][col] !== null) filledCount++;
-        }
-        const newRow = filledCount - 1;
         setGrid(afterGravity);
 
         // Убираем dropFrom после анимации и проверяем совпадения
