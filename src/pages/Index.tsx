@@ -90,17 +90,15 @@ export default function Index() {
             <NewColorsOverlay notice={newColorsNotice} />
           </div>
 
-          <div className="flex flex-col items-center gap-6 w-full pb-2">
-            <a
-              href="https://vk.ru/fotoklubpro"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono tracking-widest uppercase w-full text-center"
-              style={{ fontSize: 15, color: "#777", letterSpacing: "0.1em", textDecoration: "none" }}
-            >
-              хочешь научиться фотографировать?
-            </a>
-          </div>
+          <a
+            href="https://vk.ru/fotoklubpro"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono tracking-widest uppercase text-center"
+            style={{ width: boardPx, fontSize: 11, color: "#555", letterSpacing: "0.08em", textDecoration: "none", display: "block" }}
+          >
+            хочешь научиться фотографировать?
+          </a>
         </div>
       </div>
 
