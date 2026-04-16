@@ -464,27 +464,35 @@ export function useGameState() {
       })();
       if (previewColors) setLitColorIds(previewColors.colors);
 
-      // Для пары — запускаем pop соседа во время полёта, чтоб оба исчезли сразу при приземлении
-      if (previewColors?.isPair && previewColors.cells) {
-        const neighborKeys = previewColors.cells
-          .map(([r, c]) => `${r}-${c}`)
-          .filter(k => k !== `${newRow}-${col}`);
-        if (neighborKeys.length) setPoppingCells(new Set(neighborKeys));
-      }
-
       // Летящий кубик анимируется до финальной позиции (после гравитации)
-      const FLY_MS = 320;
+      const FLY_MS = 300;
       flyIdRef.current += 1;
       setFlyingTile({ col, colorId, targetRow: newRow, progress: flyIdRef.current, willMatch: false });
 
-      setTimeout(() => {
-        setFlyingTile(null);
-        const cleanGrid = afterGravity.map((r) =>
-          r.map((cell) => cell ? { colorId: cell.colorId } : null)
-        ) as Grid;
-        setGrid(cleanGrid);
-        checkAndPop(cleanGrid, newRow, col, colorId, rows, cols, cs);
-      }, FLY_MS);
+      if (previewColors?.isPair && previewColors.cells) {
+        // Для пары: в момент приземления сразу pop соседа, checkAndPop добавит летящий
+        const neighborKeys = previewColors.cells
+          .map(([r, c]) => `${r}-${c}`)
+          .filter(k => k !== `${newRow}-${col}`);
+        setTimeout(() => {
+          if (neighborKeys.length) setPoppingCells(new Set(neighborKeys));
+          setFlyingTile(null);
+          const cleanGrid = afterGravity.map((r) =>
+            r.map((cell) => cell ? { colorId: cell.colorId } : null)
+          ) as Grid;
+          setGrid(cleanGrid);
+          checkAndPop(cleanGrid, newRow, col, colorId, rows, cols, cs);
+        }, FLY_MS);
+      } else {
+        setTimeout(() => {
+          setFlyingTile(null);
+          const cleanGrid = afterGravity.map((r) =>
+            r.map((cell) => cell ? { colorId: cell.colorId } : null)
+          ) as Grid;
+          setGrid(cleanGrid);
+          checkAndPop(cleanGrid, newRow, col, colorId, rows, cols, cs);
+        }, FLY_MS);
+      }
 
       // Следующий цвет становится текущим, генерируем новый следующий
       // Обновляем историю последних 2 и счётчик частот
