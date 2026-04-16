@@ -221,6 +221,10 @@ export default function Index() {
           100% { transform: translateY(0); }
         }
 
+        @keyframes fly-glow {
+          0%   { opacity: 1; }
+          100% { opacity: 0.75; }
+        }
         @keyframes bump {
           0%   { transform: translateY(0); }
           40%  { transform: translateY(5px); }

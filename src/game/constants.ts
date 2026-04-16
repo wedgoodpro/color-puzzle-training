@@ -96,6 +96,7 @@ export interface FlyingTile {
   targetRow: number;
   progress: number;
   bumpRow: number | null; // строка кубика который получит удар
+  willMatch: boolean;     // летит в совпадение — подсветить свечением
 }
 
 export interface Particle {

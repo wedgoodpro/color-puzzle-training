@@ -25,17 +25,17 @@ interface GameBoardProps {
 
 // Летящий кубик — перемонтируется при каждом броске через key
 function FlyingTileView({
-  col, colorId, targetRow, cellSize, boardH,
-}: { col: number; colorId: number; targetRow: number; cellSize: number; boardH: number }) {
+  col, colorId, targetRow, cellSize, boardH, willMatch,
+}: { col: number; colorId: number; targetRow: number; cellSize: number; boardH: number; willMatch: boolean }) {
   const landY = targetRow * (cellSize + GAP);
   const startOffset = boardH + cellSize - landY;
   const divRef = useRef<HTMLDivElement>(null);
+  const hex = ITTEN_COLORS[colorId].hex;
 
   useEffect(() => {
     const el = divRef.current;
     if (!el) return;
     void el.getBoundingClientRect();
-    // Небольшой overshoot: 1.2 вместо 1.56 — мягкий отскок
     el.style.transition = "transform 300ms cubic-bezier(0.34,1.2,0.64,1)";
     el.style.transform = "translateY(0px)";
   }, []);
@@ -49,10 +49,12 @@ function FlyingTileView({
         top: landY,
         width: cellSize,
         height: cellSize,
-        backgroundColor: ITTEN_COLORS[colorId].hex,
+        backgroundColor: hex,
         zIndex: 10,
         transform: `translateY(${startOffset}px)`,
         transition: "none",
+        boxShadow: willMatch ? `0 0 8px 3px ${hex}, 0 0 16px 6px ${hex}88` : undefined,
+        animation: willMatch ? "fly-glow 200ms ease-in-out infinite alternate" : undefined,
       }}
     />
   );
@@ -183,6 +185,7 @@ export default function GameBoard({
           targetRow={flyingTile.targetRow}
           cellSize={cellSize}
           boardH={boardH}
+          willMatch={flyingTile.willMatch}
         />
       )}
 
