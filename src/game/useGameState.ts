@@ -44,6 +44,7 @@ export function useGameState() {
   const [poppingCells, setPoppingCells] = useState<Set<string>>(new Set());
   const [gravityMs, setGravityMs] = useState(0);
   const [flyingTile, setFlyingTile] = useState<FlyingTile | null>(null);
+  const flyIdRef = useRef(0);
   const [particles, setParticles] = useState<Particle[]>([]);
   const particleIdRef = useRef(0);
   const [gameOver, setGameOver] = useState(false);
@@ -430,7 +431,8 @@ export function useGameState() {
 
       // Запускаем летящий кубик — он виден пока летит, потом ставится в грид
       const FLY_MS = 320;
-      setFlyingTile({ col, colorId, targetRow, progress: 0 });
+      flyIdRef.current += 1;
+      setFlyingTile({ col, colorId, targetRow, progress: flyIdRef.current });
 
       setTimeout(() => {
         setFlyingTile(null);

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   BOARD_W, GAP,
   ITTEN_COLORS, CELL_EMPTY, CELL_EMPTY_HOVER,
@@ -23,27 +23,28 @@ interface GameBoardProps {
   boardRef?: React.RefObject<HTMLDivElement>;
 }
 
-// Отдельный компонент — перемонтируется при каждом новом кубике через key
+// Отдельный компонент — перемонтируется при каждом броске через key
+// Анимация через прямое управление DOM: браузер гарантированно видит начальный transform
 function FlyingTileView({
   col, colorId, targetRow, cellSize, boardH,
 }: { col: number; colorId: number; targetRow: number; cellSize: number; boardH: number }) {
   const landY = targetRow * (cellSize + GAP);
   const startOffset = boardH + cellSize - landY;
-  const [offset, setOffset] = useState(startOffset);
-  const rafRef = useRef<number>(0);
+  const divRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Два кадра — чтобы браузер успел отрендерить начальную позицию
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = requestAnimationFrame(() => {
-        setOffset(0);
-      });
-    });
-    return () => cancelAnimationFrame(rafRef.current);
+    const el = divRef.current;
+    if (!el) return;
+    // Читаем layout — браузер фиксирует начальный transform
+    void el.getBoundingClientRect();
+    // Запускаем плавный переход к месту
+    el.style.transition = "transform 320ms cubic-bezier(0.34,1.56,0.64,1)";
+    el.style.transform = "translateY(0px)";
   }, []);
 
   return (
     <div
+      ref={divRef}
       className="absolute pointer-events-none rounded-sm"
       style={{
         left: col * (cellSize + GAP),
@@ -52,10 +53,8 @@ function FlyingTileView({
         height: cellSize,
         backgroundColor: ITTEN_COLORS[colorId].hex,
         zIndex: 10,
-        transform: `translateY(${offset}px)`,
-        transition: offset === 0
-          ? "transform 320ms cubic-bezier(0.34,1.56,0.64,1)"
-          : "none",
+        transform: `translateY(${startOffset}px)`,
+        transition: "none",
       }}
     />
   );
@@ -170,7 +169,7 @@ export default function GameBoard({
       {/* Летящий кубик — отдельный компонент, перемонтируется по key */}
       {flyingTile && (
         <FlyingTileView
-          key={`${flyingTile.col}-${flyingTile.colorId}-${flyingTile.targetRow}-${Date.now()}`}
+          key={flyingTile.progress}
           col={flyingTile.col}
           colorId={flyingTile.colorId}
           targetRow={flyingTile.targetRow}
