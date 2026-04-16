@@ -285,10 +285,10 @@ export function useGameState() {
       };
       toRemove = dedup(toRemove);
 
-      // Pop-анимация начинается мгновенно, удаление — через 400ms (длительность pop)
+      // Пара: pop сразу, удаление через 400ms. Триада/тетрада: пауза для тапа
       const getTimings = (pts: number) => {
-        if (pts >= POINTS_TETRAD) return { popDelay: 400, gravMs: 600 };
-        if (pts >= POINTS_TRIAD)  return { popDelay: 400, gravMs: 480 };
+        if (pts >= POINTS_TETRAD) return { popDelay: 750, gravMs: 600 };
+        if (pts >= POINTS_TRIAD)  return { popDelay: 600, gravMs: 480 };
         return                           { popDelay: 400, gravMs: 360 };
       };
 
@@ -388,17 +388,14 @@ export function useGameState() {
         };
 
         if (isTriadOrTetrad) {
-          // Показываем pop-анимацию сразу, пауза только пока анимация играет
+          // Пауза — ждём тапа пользователя
           const cellKeys = new Set(removeCells.map(([r, c]) => `${r}-${c}`));
           setReviewCells(cellKeys);
           reviewPendingRef.current = true;
           setReviewPending(true);
-          // Автоматически продолжаем через popDelay — тап тоже работает
-          const autoTimer = setTimeout(() => {
-            if (reviewPendingRef.current) proceed();
-          }, popDelay);
-          reviewResolveRef.current = () => { clearTimeout(autoTimer); proceed(); };
+          reviewResolveRef.current = proceed;
         } else {
+          // Пара: pop сразу, удаление через popDelay
           setTimeout(() => setLitColorIds(new Set()), gravMs + popDelay);
           setTimeout(proceed, popDelay);
         }
