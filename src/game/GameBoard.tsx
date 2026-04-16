@@ -147,15 +147,17 @@ export default function GameBoard({
         } else if (isPopping) {
           anim = "pop 0.55s cubic-bezier(0.36,0.07,0.19,0.97) forwards";
         } else if (isBumped) {
-          anim = `bump 220ms cubic-bezier(0.36,0.07,0.19,0.97) ${Math.round(300 * 0.72)}ms forwards`;
+          anim = `bump 220ms cubic-bezier(0.36,0.07,0.19,0.97) ${Math.round(300 * 0.72)}ms both`;
         } else if (dropFrom !== undefined) {
           anim = `slideUp ${dur}ms cubic-bezier(0.34,1.4,0.64,1) forwards`;
         }
 
         const hex = ITTEN_COLORS[colorId].hex;
+        // Ударяемая ячейка получает уникальный key чтобы React пересоздал DOM-элемент
+        const elemKey = isBumped ? `${key}-bump-${flyingTile!.progress}` : key;
         return (
           <div
-            key={key}
+            key={elemKey}
             className="absolute pointer-events-none rounded-sm"
             style={{
               left: ci * (cellSize + GAP),
