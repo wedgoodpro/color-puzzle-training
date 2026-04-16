@@ -103,7 +103,7 @@ export function useGameState() {
     setTimeout(() => {
       const ids = new Set(newParticles.map((p) => p.id));
       setParticles((prev) => prev.filter((p) => !ids.has(p.id)));
-    }, 850);
+    }, 400);
   }, []);
 
   // Чистая функция: притягивает кубики к верху по каждому столбцу

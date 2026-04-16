@@ -232,6 +232,10 @@ export default function Index() {
           0%   { transform: scale(1);   opacity: 1; }
           100% { transform: scale(0);   opacity: 0; }
         }
+        @keyframes particle-burst {
+          0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+          100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
         @keyframes fly-glow {
           0%   { opacity: 1; }
           100% { opacity: 0.75; }

@@ -200,7 +200,7 @@ export default function GameBoard({
               width: 12,
               height: 12,
               backgroundColor: p.color,
-              animation: "particle-burst 0.75s cubic-bezier(0.15,0.85,0.35,1) forwards",
+              animation: "particle-burst 0.4s cubic-bezier(0.15,0.85,0.35,1) forwards",
               ["--tx" as string]: `${tx}px`,
               ["--ty" as string]: `${ty}px`,
               zIndex: 20,
