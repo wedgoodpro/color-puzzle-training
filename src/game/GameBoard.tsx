@@ -145,7 +145,7 @@ export default function GameBoard({
         if (isReview) {
           anim = "review-pulse 0.7s ease-in-out infinite";
         } else if (isPairPopping) {
-          anim = "pop-pair 0.35s ease-in forwards";
+          anim = "pop-pair 0.18s ease-in forwards";
         } else if (isPopping) {
           anim = "pop 0.55s cubic-bezier(0.36,0.07,0.19,0.97) forwards";
         } else if (dropFrom !== undefined) {

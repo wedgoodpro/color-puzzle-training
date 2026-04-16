@@ -293,7 +293,7 @@ export function useGameState() {
       const getTimings = (pts: number) => {
         if (pts >= POINTS_TETRAD) return { popDelay: 750, gravMs: 600 };
         if (pts >= POINTS_TRIAD)  return { popDelay: 600, gravMs: 480 };
-        return                           { popDelay: 350, gravMs: 360 };
+        return                           { popDelay: 180, gravMs: 360 };
       };
 
       // Запускаем каскад: анимация → (пауза для триады/тетрады) → удаление → гравитация → повтор
