@@ -222,10 +222,10 @@ export default function Index() {
         }
         @keyframes tile-fall {
           0%   { transform: translateY(0); }
-          72%  { transform: translateY(var(--travel)); }
-          82%  { transform: translateY(calc(var(--travel) + 9px)); }
-          91%  { transform: translateY(calc(var(--travel) - 4px)); }
-          96%  { transform: translateY(calc(var(--travel) + 2px)); }
+          70%  { transform: translateY(var(--travel)); }
+          80%  { transform: translateY(calc(var(--travel) - 10px)); }
+          90%  { transform: translateY(calc(var(--travel) + 5px)); }
+          95%  { transform: translateY(calc(var(--travel) - 3px)); }
           100% { transform: translateY(var(--travel)); }
         }
         @keyframes review-pulse {
