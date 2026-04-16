@@ -29,6 +29,7 @@ export default function GameBoard({
   rows,
   cellSize,
   boardPx = BOARD_W,
+  flyingTile,
   particles,
   poppingCells,
   gravityMs,
@@ -126,6 +127,31 @@ export default function GameBoard({
           />
         );
       })}
+
+      {/* Летящий кубик */}
+      {flyingTile && (() => {
+        const { col, colorId, targetRow } = flyingTile;
+        const hex = ITTEN_COLORS[colorId].hex;
+        const landY = targetRow * (cellSize + GAP);
+        const startY = -cellSize - GAP;
+        const travelPx = landY - startY;
+        return (
+          <div
+            key={`fly-${col}-${colorId}`}
+            className="absolute pointer-events-none rounded-sm"
+            style={{
+              left: col * (cellSize + GAP),
+              top: startY,
+              width: cellSize,
+              height: cellSize,
+              backgroundColor: hex,
+              zIndex: 10,
+              animation: "tile-fall 280ms linear forwards",
+              ["--travel" as string]: `${travelPx}px`,
+            }}
+          />
+        );
+      })()}
 
       {/* Particles */}
       {particles.map((p) => {

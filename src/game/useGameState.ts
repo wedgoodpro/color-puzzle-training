@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import {
   ITTEN_COLORS, COLOR_LEVELS, TRIADS, TETRADS,
   POINTS_PAIR, POINTS_TRIAD, POINTS_TETRAD,
-  Cell, Grid, Particle,
+  Cell, Grid, Particle, FlyingTile,
   getComplement, getTriad, getTriadsForColor, getTetrad, getTetradsForColor,
   getActiveColorIds, randColorIdFromActive, randFromPool,
   emptyGrid, loadScores, getBestScore, saveScore,
@@ -43,6 +43,7 @@ export function useGameState() {
   const [lastPoints, setLastPoints] = useState<number | null>(null);
   const [poppingCells, setPoppingCells] = useState<Set<string>>(new Set());
   const [gravityMs, setGravityMs] = useState(0);
+  const [flyingTile, setFlyingTile] = useState<FlyingTile | null>(null);
   const [particles, setParticles] = useState<Particle[]>([]);
   const particleIdRef = useRef(0);
   const [gameOver, setGameOver] = useState(false);
@@ -426,25 +427,33 @@ export function useGameState() {
       setUndoUsed(false);
 
       const currentGrid = gridRef.current.map((r) => [...r]) as Grid;
-      // dropFrom = сколько пикселей кубик пролетит снизу вверх (от низа поля до целевой строки)
-      const dropFrom = (rows - 1 - targetRow) * (getCellSize(cols) + GAP) + getCellSize(cols);
-      currentGrid[targetRow][col] = { colorId, dropFrom };
-      const afterGravity = applyGravity(currentGrid, rows, cols);
-      let filledCount = 0;
-      for (let r = 0; r < rows; r++) {
-        if (afterGravity[r][col] !== null) filledCount++;
-      }
-      const newRow = filledCount - 1;
-      setGrid(afterGravity);
-      // Убираем dropFrom после анимации и проверяем совпадения
+
+      // Запускаем летящий кубик — он виден пока летит, потом ставится в грид
+      const FLY_MS = 280;
+      setFlyingTile({ col, colorId, targetRow, progress: 0 });
+
       setTimeout(() => {
-        setGrid((prev) => {
-          const next = prev.map((r) => [...r]) as Grid;
-          if (next[newRow][col]) next[newRow][col] = { colorId };
-          return next;
-        });
-        checkAndPop(afterGravity, newRow, col, colorId, rows, cols, cs);
-      }, 320);
+        setFlyingTile(null);
+
+        currentGrid[targetRow][col] = { colorId };
+        const afterGravity = applyGravity(currentGrid, rows, cols);
+        let filledCount = 0;
+        for (let r = 0; r < rows; r++) {
+          if (afterGravity[r][col] !== null) filledCount++;
+        }
+        const newRow = filledCount - 1;
+        setGrid(afterGravity);
+
+        // Убираем dropFrom после анимации и проверяем совпадения
+        setTimeout(() => {
+          setGrid((prev) => {
+            const next = prev.map((r) => [...r]) as Grid;
+            if (next[newRow][col]) next[newRow][col] = { colorId };
+            return next;
+          });
+          checkAndPop(afterGravity, newRow, col, colorId, rows, cols, cs);
+        }, 320);
+      }, FLY_MS);
 
       // Следующий цвет становится текущим, генерируем новый следующий
       // Обновляем историю последних 2 и счётчик частот
@@ -500,6 +509,7 @@ export function useGameState() {
     setUndoSnapshot(null);
     setPoppingCells(new Set());
     setGravityMs(0);
+    setFlyingTile(null);
   }, [undoSnapshot, undoUsed]);
 
   // Проверка game over — всё поле заполнено (нет ни одной свободной ячейки)
@@ -573,6 +583,8 @@ export function useGameState() {
     setUndoUsed(false);
     prevActiveLenRef.current = startIds.length;
     lastTwoColorsRef.current = [];
+    colorFreqRef.current = {};
+    setFlyingTile(null);
   };
 
   const activeColorIds = getActiveColorIds(score);
@@ -606,6 +618,7 @@ export function useGameState() {
     lastPoints,
     poppingCells,
     gravityMs,
+    flyingTile,
     particles,
     gameOver,
     hoverCol,
