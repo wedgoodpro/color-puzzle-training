@@ -42,6 +42,7 @@ export function useGameState() {
   const [scoreAnim, setScoreAnim] = useState(false);
   const [lastPoints, setLastPoints] = useState<number | null>(null);
   const [poppingCells, setPoppingCells] = useState<Set<string>>(new Set());
+  const [litColorIds, setLitColorIds] = useState<Set<number>>(new Set());
 
   const [gravityMs, setGravityMs] = useState(0);
   const [flyingTile, setFlyingTile] = useState<FlyingTile | null>(null);
@@ -300,11 +301,14 @@ export function useGameState() {
 
         setPoppingCells(new Set(removeCells.map(([r, c]) => `${r}-${c}`)));
         spawnParticles(removeCells, currentGrid, cs);
+        const removedColors = new Set(removeCells.map(([r, c]) => currentGrid[r][c]!.colorId));
+        setLitColorIds(removedColors);
         const proceed = () => {
           reviewPendingRef.current = false;
           setReviewPending(false);
           setReviewCells(new Set());
           reviewResolveRef.current = null;
+          setLitColorIds(new Set());
 
           // Удаляем совпавшие ячейки
           const afterRemove = currentGrid.map((r) => [...r]) as Grid;
@@ -393,6 +397,7 @@ export function useGameState() {
           reviewResolveRef.current = proceed;
         } else {
           // Пара: pop сразу, удаление через popDelay
+          setTimeout(() => setLitColorIds(new Set()), gravMs + popDelay);
           setTimeout(proceed, popDelay);
         }
       };
@@ -532,8 +537,10 @@ export function useGameState() {
         const noticeDelay = reviewPendingRef.current ? 500 : 0;
         setTimeout(() => {
           setNewColorsNotice({ names, ids: added.ids });
+          setLitColorIds(new Set(added.ids));
           setTimeout(() => {
             setNewColorsNotice(null);
+            setLitColorIds(new Set());
           }, 4000);
         }, noticeDelay);
       }
@@ -619,6 +626,7 @@ export function useGameState() {
     scoreAnim,
     lastPoints,
     poppingCells,
+    litColorIds,
     gravityMs,
     flyingTile,
     particles,

@@ -24,6 +24,7 @@ export default function Index() {
     gameOver,
     hoverCol,
     setHoverCol,
+    litColorIds,
     newColorsNotice,
     currentColorId,
     nextColorId,
@@ -62,6 +63,7 @@ export default function Index() {
         <div className="flex flex-col items-center gap-4 w-full pt-4">
 
           <WheelPanel
+            litColorIds={litColorIds}
             activeColorIds={activeColorIds}
             currentColorId={currentColorId}
             nextColorId={nextColorId}

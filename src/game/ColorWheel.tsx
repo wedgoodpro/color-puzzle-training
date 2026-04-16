@@ -1,11 +1,12 @@
 import { BG, ITTEN_COLORS, WHEEL_COUNT } from "./constants";
 
 interface ColorWheelProps {
+  litColorIds: Set<number>;
   activeColorIds: Set<number>;
   size: number;
 }
 
-export default function ColorWheel({ activeColorIds, size }: ColorWheelProps) {
+export default function ColorWheel({ litColorIds, activeColorIds, size }: ColorWheelProps) {
   const cx = size / 2;
   const cy = size / 2;
   const R = size / 2 - 4;
@@ -17,8 +18,10 @@ export default function ColorWheel({ activeColorIds, size }: ColorWheelProps) {
         const angleDeg = (360 / WHEEL_COUNT) * idx - 90;
         const rad = (angleDeg * Math.PI) / 180;
         const segAngle = (2 * Math.PI) / WHEEL_COUNT;
+        const isLit = litColorIds.has(color.id);
         const isActive = activeColorIds.has(color.id);
-        const opacity = isActive ? 0.85 : 0.07;
+        const hasFocus = litColorIds.size > 0;
+        const opacity = !isActive ? 0.07 : hasFocus ? (isLit ? 1 : 0.2) : 0.85;
 
         const startRad = rad - segAngle / 2;
         const endRad = rad + segAngle / 2;
@@ -49,7 +52,10 @@ export default function ColorWheel({ activeColorIds, size }: ColorWheelProps) {
             opacity={opacity}
             stroke={BG}
             strokeWidth={1.5}
-            style={{ transition: "opacity 0.25s ease" }}
+            style={{
+              transition: "opacity 0.25s ease, filter 0.25s ease",
+              filter: isLit ? `drop-shadow(0 0 10px ${color.hex})` : undefined,
+            }}
           />
         );
       })}

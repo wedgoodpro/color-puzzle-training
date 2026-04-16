@@ -2,6 +2,7 @@ import ColorWheel from "@/game/ColorWheel";
 import { ITTEN_COLORS, BOARD_W, POINTS_TRIAD, POINTS_TETRAD } from "@/game/constants";
 
 interface WheelPanelProps {
+  litColorIds: Set<number>;
   activeColorIds: number[];
   currentColorId: number;
   nextColorId: number;
@@ -21,6 +22,7 @@ interface WheelPanelProps {
 }
 
 export default function WheelPanel({
+  litColorIds,
   activeColorIds,
   currentColorId,
   nextColorId,
@@ -52,7 +54,7 @@ export default function WheelPanel({
   return (
     <div className="relative" style={{ width: boardPx, height: wheelSize }}>
       <div className="absolute" style={{ left: (boardPx - wheelSize) / 2, top: 0 }}>
-        <ColorWheel activeColorIds={new Set(activeColorIds)} size={wheelSize} />
+        <ColorWheel litColorIds={litColorIds} activeColorIds={new Set(activeColorIds)} size={wheelSize} />
 
         {/* Следующий цвет — под основным, выглядывает снизу-справа */}
         {showNextColor && (
