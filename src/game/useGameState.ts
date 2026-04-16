@@ -184,9 +184,16 @@ export function useGameState() {
     return dfs(0) ? [...result] : null;
   };
 
+  // Возвращает очки за пару в зависимости от текущего счёта
+  const getPairPoints = (currentScore: number): number => {
+    if (currentScore >= 300) return 0.1;
+    if (currentScore >= 200) return 0.5;
+    return POINTS_PAIR;
+  };
+
   // Чистая функция: ищет одно совпадение на всей доске (приоритет: тетрада > триада > пара)
   // Возвращает { cells, points } или null
-  const findAnyMatch = (g: Grid, rows: number, cols: number, skipPairs = false): { cells: [number, number][]; points: number } | null => {
+  const findAnyMatch = (g: Grid, rows: number, cols: number): { cells: [number, number][]; points: number } | null => {
     const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
 
     // Тетрады
@@ -201,23 +208,22 @@ export function useGameState() {
       if (cells) return { cells, points: POINTS_TRIAD };
     }
 
-    // Пары — прямые соседи комплементарных цветов (только если score < 200)
-    if (!skipPairs) {
-      for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-          if (!g[row][col]) continue;
-          const colorId = g[row][col]!.colorId;
-          const complement = getComplement(colorId);
-          const pairCells: [number, number][] = [];
-          for (const [dr, dc] of dirs) {
-            const nr = row + dr; const nc = col + dc;
-            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && g[nr][nc]?.colorId === complement) {
-              pairCells.push([nr, nc]);
-            }
+    // Пары — прямые соседи комплементарных цветов
+    const pairPts = getPairPoints(scoreRef.current);
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        if (!g[row][col]) continue;
+        const colorId = g[row][col]!.colorId;
+        const complement = getComplement(colorId);
+        const pairCells: [number, number][] = [];
+        for (const [dr, dc] of dirs) {
+          const nr = row + dr; const nc = col + dc;
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && g[nr][nc]?.colorId === complement) {
+            pairCells.push([nr, nc]);
           }
-          if (pairCells.length > 0) {
-            return { cells: [[row, col], ...pairCells] as [number, number][], points: POINTS_PAIR * pairCells.length };
-          }
+        }
+        if (pairCells.length > 0) {
+          return { cells: [[row, col], ...pairCells] as [number, number][], points: pairPts * pairCells.length };
         }
       }
     }
@@ -253,8 +259,9 @@ export function useGameState() {
         }
       }
 
-      // Приоритет 3: пара — прямые соседи комплементарного цвета (только если score < 200)
-      if (toRemove.length === 0 && scoreRef.current < 200) {
+      // Приоритет 3: пара — прямые соседи комплементарного цвета
+      if (toRemove.length === 0) {
+        const pairPts = getPairPoints(scoreRef.current);
         const complement = getComplement(colorId);
         const pairDirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
         for (const [dr, dc] of pairDirs) {
@@ -262,7 +269,7 @@ export function useGameState() {
           if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && g[nr][nc]?.colorId === complement) {
             if (toRemove.length === 0) toRemove.push([row, col]);
             toRemove.push([nr, nc]);
-            points += POINTS_PAIR;
+            points += pairPts;
           }
         }
       }
@@ -367,7 +374,7 @@ export function useGameState() {
             }
             const actualRows = gridRef.current.length;
             const actualCols = gridRef.current[0]?.length ?? cols;
-            const nextMatch = findAnyMatch(cleanGrid, Math.min(rows, actualRows), Math.min(cols, actualCols), scoreRef.current >= 200);
+            const nextMatch = findAnyMatch(cleanGrid, Math.min(rows, actualRows), Math.min(cols, actualCols));
             if (nextMatch) {
               runCascade(cleanGrid, nextMatch.cells, nextMatch.points);
             } else {

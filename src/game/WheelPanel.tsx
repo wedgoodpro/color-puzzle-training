@@ -41,6 +41,7 @@ export default function WheelPanel({
   boardPx = BOARD_W,
 }: WheelPanelProps) {
   const phase2 = score >= 200;
+  const scoreDisplay = Number.isInteger(score) ? String(score) : score.toFixed(1);
   const wheelSize = boardPx * 0.92;
   const R = wheelSize / 2 - 4;
   const innerR = R * 0.38;
@@ -127,7 +128,7 @@ export default function WheelPanel({
             display: "inline-block",
           }}
         >
-          {score}
+          {scoreDisplay}
           {lastPoints !== null && (
             <span
               key={score}
@@ -142,7 +143,7 @@ export default function WheelPanel({
                 whiteSpace: "nowrap",
               }}
             >
-              +{lastPoints}
+              +{Number.isInteger(lastPoints) ? lastPoints : lastPoints.toFixed(1)}
             </span>
           )}
         </div>
@@ -152,7 +153,7 @@ export default function WheelPanel({
       {/* Рекорд — правый верхний угол */}
       <div className="absolute text-right" style={{ right: 0, top: 4 }}>
         <div className="font-mono font-medium leading-none" style={{ fontSize: 16, color: "#4a4a4a" }}>
-          {bestScore} <span style={{ color: "#3a3a3a" }}>/</span> {bestCombo}
+          {Number.isInteger(bestScore) ? bestScore : bestScore.toFixed(1)} <span style={{ color: "#3a3a3a" }}>/</span> {bestCombo}
         </div>
       </div>
 
