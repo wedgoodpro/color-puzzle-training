@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  BOARD_W, BOARD_H, GAP,
+  BOARD_W, GAP,
   ITTEN_COLORS, CELL_EMPTY, CELL_EMPTY_HOVER,
   Grid, FlyingTile, Particle,
 } from "./constants";
@@ -23,6 +23,44 @@ interface GameBoardProps {
   boardRef?: React.RefObject<HTMLDivElement>;
 }
 
+// Отдельный компонент — перемонтируется при каждом новом кубике через key
+function FlyingTileView({
+  col, colorId, targetRow, cellSize, boardH,
+}: { col: number; colorId: number; targetRow: number; cellSize: number; boardH: number }) {
+  const landY = targetRow * (cellSize + GAP);
+  const startOffset = boardH + cellSize - landY;
+  const [offset, setOffset] = useState(startOffset);
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    // Два кадра — чтобы браузер успел отрендерить начальную позицию
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = requestAnimationFrame(() => {
+        setOffset(0);
+      });
+    });
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  return (
+    <div
+      className="absolute pointer-events-none rounded-sm"
+      style={{
+        left: col * (cellSize + GAP),
+        top: landY,
+        width: cellSize,
+        height: cellSize,
+        backgroundColor: ITTEN_COLORS[colorId].hex,
+        zIndex: 10,
+        transform: `translateY(${offset}px)`,
+        transition: offset === 0
+          ? "transform 320ms cubic-bezier(0.34,1.56,0.64,1)"
+          : "none",
+      }}
+    />
+  );
+}
+
 export default function GameBoard({
   grid,
   cols,
@@ -42,29 +80,6 @@ export default function GameBoard({
   const boardW = boardPx;
   const boardH = rows * (cellSize + GAP) - GAP;
 
-  // Анимация летящего кубика через translateY
-  const [flyOffset, setFlyOffset] = useState<number>(0);
-  const [flyAnimating, setFlyAnimating] = useState(false);
-
-  useEffect(() => {
-    if (!flyingTile) {
-      setFlyAnimating(false);
-      return;
-    }
-    const landY = flyingTile.targetRow * (cellSize + GAP);
-    const startOffset = boardH + GAP - landY; // сколько пикселей ниже целевой позиции
-    // Сначала без transition — ставим кубик внизу
-    setFlyOffset(startOffset);
-    setFlyAnimating(false);
-    // Следующий кадр — запускаем transition к 0
-    const raf = requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setFlyOffset(0);
-        setFlyAnimating(true);
-      });
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [flyingTile ? `${flyingTile.col}-${flyingTile.colorId}-${flyingTile.targetRow}` : null]);
   const colorCells: {
     key: string; ci: number; ri: number;
     colorId: number; isPopping: boolean; dropFrom?: number;
@@ -152,22 +167,15 @@ export default function GameBoard({
         );
       })}
 
-      {/* Летящий кубик — translateY снизу вверх с пружинным отскоком */}
+      {/* Летящий кубик — отдельный компонент, перемонтируется по key */}
       {flyingTile && (
-        <div
-          className="absolute pointer-events-none rounded-sm"
-          style={{
-            left: flyingTile.col * (cellSize + GAP),
-            top: flyingTile.targetRow * (cellSize + GAP),
-            width: cellSize,
-            height: cellSize,
-            backgroundColor: ITTEN_COLORS[flyingTile.colorId].hex,
-            zIndex: 10,
-            transform: `translateY(${flyOffset}px)`,
-            transition: flyAnimating
-              ? "transform 300ms cubic-bezier(0.34,1.56,0.64,1)"
-              : "none",
-          }}
+        <FlyingTileView
+          key={`${flyingTile.col}-${flyingTile.colorId}-${flyingTile.targetRow}-${Date.now()}`}
+          col={flyingTile.col}
+          colorId={flyingTile.colorId}
+          targetRow={flyingTile.targetRow}
+          cellSize={cellSize}
+          boardH={boardH}
         />
       )}
 

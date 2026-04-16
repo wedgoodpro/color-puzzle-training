@@ -554,9 +554,19 @@ export function useGameState() {
         setGridCols(newCols);
         setGridRows(newRows);
         setGrid((prev) => {
-          const withNewCol = prev.map((row) => [...row, null as Cell]);
-          const newRow = Array(newCols).fill(null) as Cell[];
-          return [...withNewCol, newRow];
+          const colDiff = newCols - (prev[0]?.length ?? prevCols);
+          const rowDiff = newRows - prev.length;
+          // Добавляем столбцы к существующим строкам
+          let next = prev.map((row) => {
+            const r = [...row];
+            for (let i = 0; i < colDiff; i++) r.push(null as Cell);
+            return r;
+          });
+          // Добавляем новые строки
+          for (let i = 0; i < rowDiff; i++) {
+            next = [...next, Array(newCols).fill(null) as Cell[]];
+          }
+          return next;
         });
       }
     }
