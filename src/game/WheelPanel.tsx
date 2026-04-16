@@ -2,7 +2,6 @@ import ColorWheel from "@/game/ColorWheel";
 import { ITTEN_COLORS, BOARD_W, POINTS_TRIAD, POINTS_TETRAD } from "@/game/constants";
 
 interface WheelPanelProps {
-  litColorIds: Set<number>;
   activeColorIds: number[];
   currentColorId: number;
   nextColorId: number;
@@ -22,7 +21,6 @@ interface WheelPanelProps {
 }
 
 export default function WheelPanel({
-  litColorIds,
   activeColorIds,
   currentColorId,
   nextColorId,
@@ -54,13 +52,13 @@ export default function WheelPanel({
   return (
     <div className="relative" style={{ width: boardPx, height: wheelSize }}>
       <div className="absolute" style={{ left: (boardPx - wheelSize) / 2, top: 0 }}>
-        <ColorWheel litColorIds={litColorIds} activeColorIds={new Set(activeColorIds)} size={wheelSize} />
+        <ColorWheel activeColorIds={new Set(activeColorIds)} size={wheelSize} />
 
         {/* Следующий цвет — под основным, выглядывает снизу-справа */}
         {showNextColor && (
           <div
             className="absolute rounded-sm"
-            onClick={swapUnlocked && litColorIds.size === 0 ? onSwap : undefined}
+            onClick={swapUnlocked ? onSwap : undefined}
             style={{
               width: sqSize * 0.78,
               height: sqSize * 0.78,
@@ -68,7 +66,7 @@ export default function WheelPanel({
               left: "50%",
               transform: `translate(calc(-50% + ${nextOffset}px), calc(-50% + ${nextOffset}px))`,
               backgroundColor: nextColor.hex,
-              opacity: litColorIds.size > 0 ? 0 : 0.75,
+              opacity: 0.75,
               transition: "background-color 0.25s ease, opacity 0.25s ease",
               cursor: swapUnlocked ? "pointer" : "default",
             }}
@@ -78,7 +76,7 @@ export default function WheelPanel({
         {/* Текущий цвет */}
         <div
           className="absolute rounded-sm"
-          onClick={swapUnlocked && litColorIds.size === 0 ? onSwap : undefined}
+          onClick={swapUnlocked ? onSwap : undefined}
           style={{
             width: sqSize,
             height: sqSize,
@@ -86,15 +84,15 @@ export default function WheelPanel({
             left: "50%",
             transform: "translate(-50%, -50%)",
             backgroundColor: currentColor.hex,
-            transition: "background-color 0.25s ease, opacity 0.25s ease",
-            opacity: litColorIds.size > 0 ? 0 : 1,
+            transition: "background-color 0.25s ease",
+            opacity: 1,
             cursor: swapUnlocked ? "pointer" : "default",
             outline: `3px solid #2A2A2A`,
             outlineOffset: "-1px",
           }}
         >
           {/* Иконка свапа */}
-          {swapUnlocked && litColorIds.size === 0 && (
+          {swapUnlocked && (
             <span
               style={{
                 position: "absolute",

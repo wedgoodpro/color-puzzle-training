@@ -14,7 +14,6 @@ interface GameBoardProps {
   flyingTile: FlyingTile | null;
   particles: Particle[];
   poppingCells: Set<string>;
-  litCells: Set<string>;
   gravityMs: number;
   hoverCol: number | null;
   reviewCells?: Set<string>;
@@ -54,8 +53,7 @@ function FlyingTileView({
         zIndex: 10,
         transform: `translateY(${startOffset}px)`,
         transition: "none",
-        boxShadow: willMatch ? `0 0 8px 3px ${hex}, 0 0 16px 6px ${hex}88` : undefined,
-        animation: willMatch ? "fly-glow 200ms ease-in-out infinite alternate" : undefined,
+
       }}
     />
   );
@@ -70,7 +68,6 @@ export default function GameBoard({
   flyingTile,
   particles,
   poppingCells,
-  litCells,
   gravityMs,
   hoverCol,
   reviewCells,
@@ -157,7 +154,6 @@ export default function GameBoard({
         }
 
         const hex = ITTEN_COLORS[colorId].hex;
-        const isLit = litCells.has(cellKey);
         const elemKey = isBumped ? `${key}-bump-${flyingTile!.progress}` : key;
         return (
           <div
@@ -171,10 +167,7 @@ export default function GameBoard({
               backgroundColor: hex,
               animation: anim,
               ["--drop" as string]: dropFrom !== undefined ? `${dropFrom}px` : "0px",
-              ["--glow" as string]: hex,
               zIndex: isReview ? 3 : 2,
-              boxShadow: isLit ? `0 0 6px 2px ${hex}, 0 0 12px 4px ${hex}66` : undefined,
-              transition: isLit ? "box-shadow 80ms ease-out" : "box-shadow 150ms ease-in",
             }}
           />
         );

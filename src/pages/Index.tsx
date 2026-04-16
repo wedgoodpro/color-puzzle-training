@@ -18,14 +18,12 @@ export default function Index() {
     scoreAnim,
     lastPoints,
     poppingCells,
-    litCells,
     gravityMs,
     flyingTile,
     particles,
     gameOver,
     hoverCol,
     setHoverCol,
-    litColorIds,
     newColorsNotice,
     currentColorId,
     nextColorId,
@@ -64,7 +62,6 @@ export default function Index() {
         <div className="flex flex-col items-center gap-4 w-full pt-4">
 
           <WheelPanel
-            litColorIds={litColorIds}
             activeColorIds={activeColorIds}
             currentColorId={currentColorId}
             nextColorId={nextColorId}
@@ -93,7 +90,6 @@ export default function Index() {
               flyingTile={flyingTile}
               particles={particles}
               poppingCells={poppingCells}
-              litCells={litCells}
               gravityMs={gravityMs}
               hoverCol={hoverCol}
               reviewCells={reviewCells}

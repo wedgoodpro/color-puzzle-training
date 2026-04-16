@@ -1,12 +1,11 @@
 import { BG, ITTEN_COLORS, WHEEL_COUNT } from "./constants";
 
 interface ColorWheelProps {
-  litColorIds: Set<number>;
   activeColorIds: Set<number>;
   size: number;
 }
 
-export default function ColorWheel({ litColorIds, activeColorIds, size }: ColorWheelProps) {
+export default function ColorWheel({ activeColorIds, size }: ColorWheelProps) {
   const cx = size / 2;
   const cy = size / 2;
   const R = size / 2 - 4;
@@ -18,14 +17,9 @@ export default function ColorWheel({ litColorIds, activeColorIds, size }: ColorW
         const angleDeg = (360 / WHEEL_COUNT) * idx - 90;
         const rad = (angleDeg * Math.PI) / 180;
         const segAngle = (2 * Math.PI) / WHEEL_COUNT;
-        const isLit = litColorIds.has(color.id);
         const isActive = activeColorIds.has(color.id);
-        const hasFocus = litColorIds.size > 0;
-        // Неактивные цвета — почти невидимы
-        // Активные: подсвечены если lit, иначе обычные
-        const opacity = !isActive ? 0.07 : hasFocus ? (isLit ? 1 : 0.2) : 0.85;
+        const opacity = isActive ? 0.85 : 0.07;
 
-        // Сегмент-дуга
         const startRad = rad - segAngle / 2;
         const endRad = rad + segAngle / 2;
 
@@ -55,14 +49,10 @@ export default function ColorWheel({ litColorIds, activeColorIds, size }: ColorW
             opacity={opacity}
             stroke={BG}
             strokeWidth={1.5}
-            style={{
-              transition: "opacity 0.25s ease, filter 0.25s ease",
-              filter: isLit ? `drop-shadow(0 0 10px ${color.hex})` : undefined,
-            }}
+            style={{ transition: "opacity 0.25s ease" }}
           />
         );
       })}
-      {/* Центральное отверстие */}
       <circle cx={cx} cy={cy} r={r} fill={BG} />
     </svg>
   );
