@@ -55,6 +55,7 @@ export function useGameState() {
   const [newColorsNotice, setNewColorsNotice] = useState<{ names: string[]; ids: number[] } | null>(null);
   const prevActiveLenRef = useRef(initialActiveIds.length);
   const lastTwoColorsRef = useRef<number[]>([]);
+  const colorFreqRef = useRef<Record<number, number>>({});
   // Undo: сохраняем snapshot до хода
   const [undoSnapshot, setUndoSnapshot] = useState<{ grid: Grid; currentColorId: number; nextColorId: number; score: number } | null>(null);
   const [undoUsed, setUndoUsed] = useState(false);
@@ -446,13 +447,37 @@ export function useGameState() {
       }, 320);
 
       // Следующий цвет становится текущим, генерируем новый следующий
-      // Цвет не может повторяться 1 ход — каждый следующий отличается от предыдущего
-      lastTwoColorsRef.current = [colorId];
+      // Обновляем историю последних 2 и счётчик частот
+      const last2 = [...lastTwoColorsRef.current, colorId].slice(-2);
+      lastTwoColorsRef.current = last2;
+      colorFreqRef.current[colorId] = (colorFreqRef.current[colorId] ?? 0) + 1;
 
-      const pickNextId = (activeIds: number[], history: number[]): number => {
-        const excluded = new Set(history);
-        const pool = activeIds.filter((id) => !excluded.has(id));
-        return randFromPool(pool.length > 0 ? pool : activeIds);
+      const pickNextId = (activeIds: number[], hardExclude: number[]): number => {
+        const hardSet = new Set(hardExclude);
+        // Если цвет выпал 2 раза подряд — жёсткий запрет
+        const twoInRow = last2.length === 2 && last2[0] === last2[1];
+        const mustExclude = new Set(hardSet);
+        if (twoInRow) mustExclude.add(last2[0]);
+
+        const freq = colorFreqRef.current;
+        const total = Object.values(freq).reduce((a, b) => a + b, 0) + 1;
+
+        // Мягкий баланс: взвешенный выбор — редкие цвета получают больший вес
+        const candidates = activeIds.filter((id) => !mustExclude.has(id));
+        const pool = candidates.length > 0 ? candidates : activeIds.filter((id) => !hardSet.has(id));
+        const finalPool = pool.length > 0 ? pool : activeIds;
+
+        const weights = finalPool.map((id) => {
+          const f = (freq[id] ?? 0) / total;
+          return Math.max(0.1, 1 - f * activeIds.length);
+        });
+        const totalW = weights.reduce((a, b) => a + b, 0);
+        let r = Math.random() * totalW;
+        for (let i = 0; i < finalPool.length; i++) {
+          r -= weights[i];
+          if (r <= 0) return finalPool[i];
+        }
+        return finalPool[finalPool.length - 1];
       };
 
       const safeNextColorId = nextColorId;
