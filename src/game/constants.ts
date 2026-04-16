@@ -122,6 +122,9 @@ export const getTriadsForColor = (id: number): number[][] =>
 export const getTetrad = (id: number): number[] | null =>
   TETRADS.find((t) => t.includes(id)) ?? null;
 
+export const getTetradsForColor = (id: number): number[][] =>
+  TETRADS.filter((t) => t.includes(id));
+
 export const getActiveColorIds = (score: number): number[] => {
   const ids: number[] = [];
   for (const level of COLOR_LEVELS) {

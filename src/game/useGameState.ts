@@ -3,7 +3,7 @@ import {
   ITTEN_COLORS, COLOR_LEVELS, TRIADS, TETRADS,
   POINTS_PAIR, POINTS_TRIAD, POINTS_TETRAD,
   Cell, Grid, Particle,
-  getComplement, getTriad, getTriadsForColor, getTetrad,
+  getComplement, getTriad, getTriadsForColor, getTetrad, getTetradsForColor,
   getActiveColorIds, randColorIdFromActive,
   emptyGrid, loadScores, getBestScore, saveScore,
   getGridSize, getCellSize, GAP,
@@ -227,14 +227,14 @@ export function useGameState() {
       let toRemove: [number, number][] = [];
       let points = 0;
 
-      // Приоритет 1: тетрада — ищем связную цепочку из 4 уникальных цветов тетрады
-      const tetrad = getTetrad(colorId);
-      if (tetrad) {
+      // Приоритет 1: тетрада — перебираем все тетрады в которые входит этот цвет
+      const tetrads = getTetradsForColor(colorId);
+      for (const tetrad of tetrads) {
         const cells = findGroupOnBoard(g, rows, cols, tetrad);
-        // Убеждаемся что упавшая ячейка [row,col] входит в найденную группу
         if (cells && cells.some(([r, c]) => r === row && c === col)) {
           toRemove = cells;
           points = POINTS_TETRAD;
+          break;
         }
       }
 
