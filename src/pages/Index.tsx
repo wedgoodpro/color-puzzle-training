@@ -97,9 +97,9 @@ export default function Index() {
             className="font-mono uppercase text-center"
             style={{
               width: boardPx,
-              fontSize: 13,
+              fontSize: 11.5,
               color: "#555",
-              letterSpacing: "0.22em",
+              letterSpacing: "0.18em",
               textDecoration: "none",
               display: "block",
               marginTop: -8,
