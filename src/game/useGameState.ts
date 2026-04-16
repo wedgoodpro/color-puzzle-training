@@ -438,6 +438,34 @@ export function useGameState() {
       }
       const newRow = filledCount - 1;
 
+      // Предсказываем совпадение и сразу подсвечиваем круг — ещё во время полёта
+      const previewGrid = afterGravity.map((r) =>
+        r.map((cell) => cell ? { colorId: cell.colorId } : null)
+      ) as Grid;
+      const previewColors = (() => {
+        // Тетрада
+        for (const tetrad of getTetradsForColor(colorId)) {
+          const cells = findGroupOnBoard(previewGrid, rows, cols, tetrad);
+          if (cells?.some(([r, c]) => r === newRow && c === col))
+            return new Set(cells.map(([r, c]) => previewGrid[r][c]!.colorId));
+        }
+        // Триада
+        for (const triad of getTriadsForColor(colorId)) {
+          const cells = findGroupOnBoard(previewGrid, rows, cols, triad);
+          if (cells?.some(([r, c]) => r === newRow && c === col))
+            return new Set(cells.map(([r, c]) => previewGrid[r][c]!.colorId));
+        }
+        // Пара
+        const complement = getComplement(colorId);
+        for (const [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+          const nr = newRow + dr; const nc = col + dc;
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && previewGrid[nr][nc]?.colorId === complement)
+            return new Set([colorId, complement]);
+        }
+        return null;
+      })();
+      if (previewColors) setLitColorIds(previewColors);
+
       // Летящий кубик анимируется до финальной позиции (после гравитации)
       const FLY_MS = 320;
       flyIdRef.current += 1;
