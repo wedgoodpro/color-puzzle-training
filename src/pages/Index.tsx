@@ -94,8 +94,16 @@ export default function Index() {
             href="https://vk.ru/fotoklubpro"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-mono tracking-widest uppercase text-center"
-            style={{ width: boardPx, fontSize: 11, color: "#555", letterSpacing: "0.08em", textDecoration: "none", display: "block" }}
+            className="font-mono uppercase text-center"
+            style={{
+              width: boardPx,
+              fontSize: 13,
+              color: "#555",
+              letterSpacing: "0.22em",
+              textDecoration: "none",
+              display: "block",
+              marginTop: -8,
+            }}
           >
             хочешь научиться фотографировать?
           </a>
