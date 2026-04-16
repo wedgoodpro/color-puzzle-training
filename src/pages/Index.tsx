@@ -18,6 +18,7 @@ export default function Index() {
     scoreAnim,
     lastPoints,
     poppingCells,
+    pairPoppingCells,
     gravityMs,
     flyingTile,
     particles,
@@ -92,6 +93,7 @@ export default function Index() {
               flyingTile={flyingTile}
               particles={particles}
               poppingCells={poppingCells}
+              pairPoppingCells={pairPoppingCells}
               gravityMs={gravityMs}
               hoverCol={hoverCol}
               reviewCells={reviewCells}
@@ -221,6 +223,15 @@ export default function Index() {
           100% { transform: translateY(0); }
         }
 
+        @keyframes pop {
+          0%   { transform: scale(1);    opacity: 1; }
+          30%  { transform: scale(1.15); opacity: 1; }
+          100% { transform: scale(0);    opacity: 0; }
+        }
+        @keyframes pop-pair {
+          0%   { transform: scale(1);   opacity: 1; }
+          100% { transform: scale(0);   opacity: 0; }
+        }
         @keyframes fly-glow {
           0%   { opacity: 1; }
           100% { opacity: 0.75; }

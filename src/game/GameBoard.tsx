@@ -14,6 +14,7 @@ interface GameBoardProps {
   flyingTile: FlyingTile | null;
   particles: Particle[];
   poppingCells: Set<string>;
+  pairPoppingCells: Set<string>;
   gravityMs: number;
   hoverCol: number | null;
   reviewCells?: Set<string>;
@@ -68,6 +69,7 @@ export default function GameBoard({
   flyingTile,
   particles,
   poppingCells,
+  pairPoppingCells,
   gravityMs,
   hoverCol,
   reviewCells,
@@ -138,9 +140,12 @@ export default function GameBoard({
         const dur = gravityMs > 0 ? gravityMs : 300;
         const cellKey = `${ri}-${ci}`;
         const isReview = !!reviewCells?.has(cellKey);
+        const isPairPopping = pairPoppingCells.has(cellKey);
         let anim: string | undefined;
         if (isReview) {
           anim = "review-pulse 0.7s ease-in-out infinite";
+        } else if (isPairPopping) {
+          anim = "pop-pair 0.35s ease-in forwards";
         } else if (isPopping) {
           anim = "pop 0.55s cubic-bezier(0.36,0.07,0.19,0.97) forwards";
         } else if (dropFrom !== undefined) {

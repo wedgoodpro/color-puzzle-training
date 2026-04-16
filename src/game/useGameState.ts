@@ -42,6 +42,7 @@ export function useGameState() {
   const [scoreAnim, setScoreAnim] = useState(false);
   const [lastPoints, setLastPoints] = useState<number | null>(null);
   const [poppingCells, setPoppingCells] = useState<Set<string>>(new Set());
+  const [pairPoppingCells, setPairPoppingCells] = useState<Set<string>>(new Set());
   const [litColorIds, setLitColorIds] = useState<Set<number>>(new Set());
 
   const [gravityMs, setGravityMs] = useState(0);
@@ -288,11 +289,11 @@ export function useGameState() {
       };
       toRemove = dedup(toRemove);
 
-      // Пара: pop сразу, удаление через 550ms (длина pop-анимации). Триада/тетрада: пауза для тапа
+      // Пара: pop-pair анимация 350ms. Триада/тетрада: пауза для тапа
       const getTimings = (pts: number) => {
         if (pts >= POINTS_TETRAD) return { popDelay: 750, gravMs: 600 };
         if (pts >= POINTS_TRIAD)  return { popDelay: 600, gravMs: 480 };
-        return                           { popDelay: 550, gravMs: 360 };
+        return                           { popDelay: 350, gravMs: 360 };
       };
 
       // Запускаем каскад: анимация → (пауза для триады/тетрады) → удаление → гравитация → повтор
@@ -300,7 +301,11 @@ export function useGameState() {
         const { popDelay, gravMs } = getTimings(pts);
         const isTriadOrTetrad = pts >= POINTS_TRIAD;
 
-        setPoppingCells(new Set(removeCells.map(([r, c]) => `${r}-${c}`)));
+        if (isTriadOrTetrad) {
+          setPoppingCells(new Set(removeCells.map(([r, c]) => `${r}-${c}`)));
+        } else {
+          setPairPoppingCells(new Set(removeCells.map(([r, c]) => `${r}-${c}`)));
+        }
         spawnParticles(removeCells, currentGrid, cs);
         const removedColors = new Set(removeCells.map(([r, c]) => currentGrid[r][c]!.colorId));
         setLitColorIds(removedColors);
@@ -315,6 +320,7 @@ export function useGameState() {
           const afterRemove = currentGrid.map((r) => [...r]) as Grid;
           removeCells.forEach(([r, c]) => { afterRemove[r][c] = null; });
           setPoppingCells(new Set());
+          setPairPoppingCells(new Set());
 
           // Применяем гравитацию и считаем dropFrom для каждой сдвинувшейся ячейки
           const afterGravity = applyGravity(afterRemove, rows, cols);
@@ -613,6 +619,7 @@ export function useGameState() {
     scoreRef.current = 0;
     setComboScore(0);
     setPoppingCells(new Set());
+    setPairPoppingCells(new Set());
     isBusyRef.current = false;
     setGameOver(false);
     setLastPoints(null);
@@ -654,6 +661,7 @@ export function useGameState() {
     scoreAnim,
     lastPoints,
     poppingCells,
+    pairPoppingCells,
     litColorIds,
     gravityMs,
     flyingTile,
