@@ -23,8 +23,7 @@ interface GameBoardProps {
   boardRef?: React.RefObject<HTMLDivElement>;
 }
 
-// Отдельный компонент — перемонтируется при каждом броске через key
-// Анимация через прямое управление DOM: браузер гарантированно видит начальный transform
+// Летящий кубик — перемонтируется при каждом броске через key
 function FlyingTileView({
   col, colorId, targetRow, cellSize, boardH,
 }: { col: number; colorId: number; targetRow: number; cellSize: number; boardH: number }) {
@@ -35,10 +34,9 @@ function FlyingTileView({
   useEffect(() => {
     const el = divRef.current;
     if (!el) return;
-    // Читаем layout — браузер фиксирует начальный transform
     void el.getBoundingClientRect();
-    // Запускаем плавный переход к месту
-    el.style.transition = "transform 320ms cubic-bezier(0.34,1.56,0.64,1)";
+    // Небольшой overshoot: 1.2 вместо 1.56 — мягкий отскок
+    el.style.transition = "transform 300ms cubic-bezier(0.34,1.2,0.64,1)";
     el.style.transform = "translateY(0px)";
   }, []);
 
@@ -86,6 +84,11 @@ export default function GameBoard({
 
   const actualRows = grid.length;
   const actualCols = grid[0]?.length ?? 0;
+
+  // Ячейка которая получит анимацию удара
+  const bumpKey = flyingTile?.bumpRow != null
+    ? `${flyingTile.bumpRow}-${flyingTile.col}`
+    : null;
 
   for (let ci = 0; ci < actualCols; ci++) {
     let slotIdx = 0;
@@ -137,11 +140,14 @@ export default function GameBoard({
         const dur = gravityMs > 0 ? gravityMs : 300;
         const cellKey = `${ri}-${ci}`;
         const isReview = !!reviewCells?.has(cellKey);
+        const isBumped = cellKey === bumpKey;
         let anim: string | undefined;
         if (isReview) {
           anim = "review-pulse 0.7s ease-in-out infinite";
         } else if (isPopping) {
           anim = "pop 0.55s cubic-bezier(0.36,0.07,0.19,0.97) forwards";
+        } else if (isBumped) {
+          anim = `bump 220ms cubic-bezier(0.36,0.07,0.19,0.97) ${Math.round(300 * 0.72)}ms forwards`;
         } else if (dropFrom !== undefined) {
           anim = `slideUp ${dur}ms cubic-bezier(0.34,1.4,0.64,1) forwards`;
         }
@@ -166,7 +172,7 @@ export default function GameBoard({
         );
       })}
 
-      {/* Летящий кубик — отдельный компонент, перемонтируется по key */}
+      {/* Летящий кубик */}
       {flyingTile && (
         <FlyingTileView
           key={flyingTile.progress}
