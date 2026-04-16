@@ -223,9 +223,9 @@ export default function Index() {
         @keyframes tile-fall {
           0%   { transform: translateY(0); }
           72%  { transform: translateY(var(--travel)); }
-          82%  { transform: translateY(calc(var(--travel) - 9px)); }
-          91%  { transform: translateY(calc(var(--travel) + 4px)); }
-          96%  { transform: translateY(calc(var(--travel) - 2px)); }
+          82%  { transform: translateY(calc(var(--travel) + 9px)); }
+          91%  { transform: translateY(calc(var(--travel) - 4px)); }
+          96%  { transform: translateY(calc(var(--travel) + 2px)); }
           100% { transform: translateY(var(--travel)); }
         }
         @keyframes review-pulse {

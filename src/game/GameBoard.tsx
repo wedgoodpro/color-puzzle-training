@@ -128,13 +128,13 @@ export default function GameBoard({
         );
       })}
 
-      {/* Летящий кубик */}
+      {/* Летящий кубик — стартует снизу поля, летит вверх до targetRow */}
       {flyingTile && (() => {
         const { col, colorId, targetRow } = flyingTile;
         const hex = ITTEN_COLORS[colorId].hex;
         const landY = targetRow * (cellSize + GAP);
-        const startY = -cellSize - GAP;
-        const travelPx = landY - startY;
+        const startY = boardH; // ниже поля
+        const travelPx = landY - startY; // отрицательное — движение вверх
         return (
           <div
             key={`fly-${col}-${colorId}`}
