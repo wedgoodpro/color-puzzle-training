@@ -40,6 +40,7 @@ export default function WheelPanel({
   lastPoints,
   boardPx = BOARD_W,
 }: WheelPanelProps) {
+  const phase2 = score >= 200;
   const wheelSize = boardPx * 0.92;
   const R = wheelSize / 2 - 4;
   const innerR = R * 0.38;
@@ -117,11 +118,12 @@ export default function WheelPanel({
       {/* Очки — левый верхний угол */}
       <div className="absolute" style={{ left: 0, top: 4 }}>
         <div
-          className="font-mono font-medium text-white leading-none relative"
+          className="font-mono font-medium leading-none relative"
           style={{
             fontSize: 24,
+            color: phase2 ? "#3a3a3a" : "#ffffff",
             transform: scoreAnim ? "scale(1.2)" : "scale(1)",
-            transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1)",
+            transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1), color 0.4s ease",
             display: "inline-block",
           }}
         >
@@ -158,10 +160,17 @@ export default function WheelPanel({
       <div className="absolute" style={{ left: 0, bottom: 4 }}>
         <div
           className="font-mono font-medium leading-none"
-          style={{ fontSize: 16, color: comboScore > 0 ? "#888" : "#3a3a3a" }}
+          style={{
+            fontSize: phase2 ? 28 : 16,
+            color: phase2 ? "#ffffff" : comboScore > 0 ? "#888" : "#3a3a3a",
+            transition: "font-size 0.4s ease, color 0.4s ease",
+          }}
         >
           {comboScore}
         </div>
+        {phase2 && (
+          <div className="font-mono" style={{ color: "#555", fontSize: 9 }}>схемы</div>
+        )}
       </div>
 
       {/* Кнопка отмены — нижний правый угол, появляется при 50 очках */}
