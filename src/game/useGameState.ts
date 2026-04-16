@@ -473,14 +473,16 @@ export function useGameState() {
       const bumpRow = afterGravity[newRow + 1]?.[col] != null ? newRow + 1 : null;
       setFlyingTile({ col, colorId, targetRow: newRow, progress: flyIdRef.current, bumpRow, willMatch: !!previewMatch });
 
+      // Подсвечиваем ячейки за 100ms до приземления
+      if (previewMatch) {
+        setTimeout(() => {
+          setLitCells(new Set(previewMatch.cells.map(([r, c]) => `${r}-${c}`)));
+        }, FLY_MS - 100);
+      }
+
       setTimeout(() => {
         setFlyingTile(null);
-        // При приземлении — мгновенно подсвечиваем ячейки совпадения
-        if (previewMatch) {
-          setLitCells(new Set(previewMatch.cells.map(([r, c]) => `${r}-${c}`)));
-          // Гасим подсветку ячеек когда pop-анимация уже играет
-          setTimeout(() => setLitCells(new Set()), 200);
-        }
+        if (previewMatch) setTimeout(() => setLitCells(new Set()), 200);
         const cleanGrid = afterGravity.map((r) =>
           r.map((cell) => cell ? { colorId: cell.colorId } : null)
         ) as Grid;
