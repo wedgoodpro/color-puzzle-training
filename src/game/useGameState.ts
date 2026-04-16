@@ -447,17 +447,12 @@ export function useGameState() {
 
       setTimeout(() => {
         setFlyingTile(null);
-        setGrid(afterGravity);
-
-        // Убираем dropFrom после анимации и проверяем совпадения
-        setTimeout(() => {
-          setGrid((prev) => {
-            const next = prev.map((r) => [...r]) as Grid;
-            if (next[newRow][col]) next[newRow][col] = { colorId };
-            return next;
-          });
-          checkAndPop(afterGravity, newRow, col, colorId, rows, cols, cs);
-        }, 320);
+        // Чистый грид без dropFrom + сразу проверяем совпадения
+        const cleanGrid = afterGravity.map((r) =>
+          r.map((cell) => cell ? { colorId: cell.colorId } : null)
+        ) as Grid;
+        setGrid(cleanGrid);
+        checkAndPop(cleanGrid, newRow, col, colorId, rows, cols, cs);
       }, FLY_MS);
 
       // Следующий цвет становится текущим, генерируем новый следующий
