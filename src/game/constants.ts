@@ -111,10 +111,10 @@ export interface ScoreEntry {
   date: string;
 }
 
-// Тёплые: жёлтый, жёлто-оранж, оранж, красно-оранж, красный, жёлто-зелёный
-// Холодные: красно-фиолет, фиолет, сине-фиолет, синий, сине-зелёный, зелёный
-export const WARM_IDS = new Set([0, 1, 2, 3, 4, 11]);
-export const COOL_IDS = new Set([5, 6, 7, 8, 9, 10]);
+// Тёплые: жёлтый, жёлто-оранж, оранж, красно-оранж, красный, красно-фиолет, жёлто-зелёный
+// Холодные: фиолет, сине-фиолет, синий, сине-зелёный, зелёный
+export const WARM_IDS = new Set([0, 1, 2, 3, 4, 5, 11]);
+export const COOL_IDS = new Set([6, 7, 8, 9, 10]);
 
 export const isWarm = (id: number): boolean => WARM_IDS.has(id);
 export const isCool = (id: number): boolean => COOL_IDS.has(id);
