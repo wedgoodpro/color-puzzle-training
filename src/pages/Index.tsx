@@ -103,6 +103,8 @@ export default function Index() {
               textDecoration: "none",
               display: "block",
               marginTop: -8,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
             }}
           >
             хочешь научиться фотографировать?
