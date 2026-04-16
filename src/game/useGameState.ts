@@ -4,7 +4,7 @@ import {
   POINTS_PAIR, POINTS_TRIAD, POINTS_TETRAD,
   Cell, Grid, Particle,
   getComplement, getTriad, getTriadsForColor, getTetrad, getTetradsForColor,
-  getActiveColorIds, randColorIdFromActive,
+  getActiveColorIds, randColorIdFromActive, isWarm, isCool, randFromPool,
   emptyGrid, loadScores, getBestScore, saveScore,
   getGridSize, getCellSize, GAP,
   getBestCombo, saveBestCombo,
@@ -437,37 +437,19 @@ export function useGameState() {
       }, 320);
 
       // Следующий цвет становится текущим, генерируем новый следующий
-      // Запоминаем последние 4 реально упавших цвета
-      const last4 = [...lastTwoColorsRef.current, colorId].slice(-4);
-      lastTwoColorsRef.current = last4;
+      // Чередование тёплый↔холодный: после тёплого — холодный и наоборот
+      const pickNextId = (afterColorId: number, activeIds: number[]): number => {
+        const needCool = isWarm(afterColorId);
+        const targetPool = activeIds.filter((id) => needCool ? isCool(id) : isWarm(id));
+        // Если нужных цветов нет в активных — берём любой
+        const pool = targetPool.length > 0 ? targetPool : activeIds;
+        // Не повторять тот же цвет подряд
+        const filtered = pool.filter((id) => id !== afterColorId);
+        return randFromPool(filtered.length > 0 ? filtered : pool);
+      };
 
-      // Запрет 3 подряд одинаковых: если 2 последних = colorId, исключаем его из следующего
-      const last2same = last4.length >= 2 && last4[last4.length - 1] === last4[last4.length - 2];
-      const excludeFor3 = last2same ? colorId : undefined;
-
-      // Борьба с "2 цвета долго": если из последних 4 используется только 2 уникальных цвета
-      // при наличии >2 активных — форсируем третий цвет
-      const uniqueInLast4 = new Set(last4);
-      const forceNewColor =
-        activeColorIds.length > 2 &&
-        last4.length === 4 &&
-        uniqueInLast4.size <= 2;
-
-      let safeNextColorId = nextColorId;
-      if (activeColorIds.length > 2 && nextColorId === colorId && last2same) {
-        safeNextColorId = randColorIdFromActive(activeColorIds, colorId);
-      }
-
-      let newNextId: number;
-      if (forceNewColor) {
-        // Принудительно выбираем цвет НЕ из тех 2, что были последние 4 хода
-        const pool = activeColorIds.filter((id) => !uniqueInLast4.has(id));
-        newNextId = pool.length > 0
-          ? pool[Math.floor(Math.random() * pool.length)]
-          : randColorIdFromActive(activeColorIds, excludeFor3);
-      } else {
-        newNextId = randColorIdFromActive(activeColorIds, excludeFor3);
-      }
+      const safeNextColorId = nextColorId;
+      const newNextId = pickNextId(safeNextColorId, activeColorIds);
 
       setCurrentColorId(safeNextColorId);
       setNextColorId(newNextId);
@@ -546,7 +528,10 @@ export function useGameState() {
     setGridCols(cols);
     setGridRows(rows);
     const firstColor = randColorIdFromActive(startIds);
-    const secondColor = randColorIdFromActive(startIds, firstColor);
+    const secondPool = startIds.filter((id) => isWarm(firstColor) ? isCool(id) : isWarm(id));
+    const secondColor = secondPool.length > 0
+      ? randFromPool(secondPool)
+      : randColorIdFromActive(startIds, firstColor);
     setCurrentColorId(firstColor);
     setNextColorId(secondColor);
     setScore(0);
