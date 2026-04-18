@@ -1,6 +1,6 @@
 import { useState } from "react";
 import GameBoard from "@/game/GameBoard";
-import { GameOverModal } from "@/game/GameOverlay";
+import { GameOverModal, WinModal } from "@/game/GameOverlay";
 import { BG } from "@/game/constants";
 import WheelPanel from "@/game/WheelPanel";
 import NewColorsOverlay from "@/game/NewColorsOverlay";
@@ -23,6 +23,7 @@ export default function Index() {
     flyingTile,
     particles,
     gameOver,
+    isWin,
     hoverCol,
     setHoverCol,
     litColorIds,
@@ -188,7 +189,11 @@ export default function Index() {
         </div>
       )}
 
-      {gameOver && (
+      {isWin && (
+        <WinModal onRestart={restartGame} />
+      )}
+
+      {gameOver && !isWin && (
         <GameOverModal
           score={score}
           onRestart={restartGame}

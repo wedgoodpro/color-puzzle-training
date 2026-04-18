@@ -32,8 +32,9 @@ export function useGameState() {
   const gridRowsRef = useRef(initRows);
   const setGridCols = (v: number) => { gridColsRef.current = v; setGridColsState(v); };
   const setGridRows = (v: number) => { gridRowsRef.current = v; setGridRowsState(v); };
-  const [score, setScore] = useState(0);
-  const scoreRef = useRef(0);
+  const [score, setScore] = useState(1000);
+  const scoreRef = useRef(1000);
+  const [isWin, setIsWin] = useState(false);
   const [comboScore, setComboScore] = useState(0);
   const [currentColorId, setCurrentColorId] = useState<number>(() => randColorIdFromActive(initialActiveIds));
   const [nextColorId, setNextColorId] = useState<number>(() => randColorIdFromActive(initialActiveIds, randColorIdFromActive(initialActiveIds)));
@@ -368,10 +369,11 @@ export function useGameState() {
                 )
               ) as Grid;
             });
-            // Начисляем очки после гравитации — useEffect расширения сетки сработает здесь
+            // Вычитаем очки после гравитации — useEffect расширения сетки сработает здесь
             setScore((s) => {
-              const newScore = s + pts;
+              const newScore = Math.max(0, s - pts);
               scoreRef.current = newScore;
+              if (newScore <= 0) setIsWin(true);
               return newScore;
             });
             // Комбо-счётчик: +1 за каждую триаду или тетраду
@@ -615,8 +617,9 @@ export function useGameState() {
     const secondColor = randColorIdFromActive(startIds, firstColor);
     setCurrentColorId(firstColor);
     setNextColorId(secondColor);
-    setScore(0);
-    scoreRef.current = 0;
+    setScore(1000);
+    scoreRef.current = 1000;
+    setIsWin(false);
     setComboScore(0);
     setPoppingCells(new Set());
     setPairPoppingCells(new Set());
@@ -667,6 +670,7 @@ export function useGameState() {
     flyingTile,
     particles,
     gameOver,
+    isWin,
     hoverCol,
     setHoverCol,
 

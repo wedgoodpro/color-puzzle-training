@@ -162,3 +162,34 @@ export function GameOverModal({ score, onRestart }: GameOverModalProps) {
     </div>
   );
 }
+
+// WinModal — оверлей победы
+interface WinModalProps {
+  onRestart: () => void;
+}
+
+export function WinModal({ onRestart }: WinModalProps) {
+  return (
+    <div
+      className="fixed inset-0 flex flex-col items-center justify-center gap-8 z-50 animate-fade-in"
+      style={{ backgroundColor: "rgba(20,30,20,0.97)", backdropFilter: "blur(8px)" }}
+    >
+      <div className="text-center">
+        <p className="font-mono text-xs uppercase tracking-widest mb-4" style={{ color: "#6a6" }}>
+          Победа!
+        </p>
+        <p className="font-mono text-6xl font-medium text-white leading-none">0</p>
+        <p className="font-mono text-sm mt-4" style={{ color: "#888" }}>
+          Ты обнулил счёт — так держать!
+        </p>
+      </div>
+      <button
+        onClick={onRestart}
+        className="px-6 py-3 font-mono text-sm rounded-sm transition-colors text-white"
+        style={{ backgroundColor: "#2e6e2e" }}
+      >
+        Сыграть ещё раз
+      </button>
+    </div>
+  );
+}
