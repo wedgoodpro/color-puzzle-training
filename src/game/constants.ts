@@ -36,9 +36,9 @@ export const TETRADS: number[][] = [
 ];
 
 // Очки за сочетание
-export const POINTS_PAIR = 1;   // 2 цвета (пара)
-export const POINTS_TRIAD = 4;  // 3 цвета (триада)
-export const POINTS_TETRAD = 6; // 4 цвета (тетрада)
+export const POINTS_PAIR = 1;    // 2 цвета (пара)
+export const POINTS_TRIAD = 5;   // 3 цвета (триада)
+export const POINTS_TETRAD = 10; // 4 цвета (тетрада)
 
 // Прогрессия: стартуем с 6 цветов (3 пары), каждые 25 очков +1 пара
 // Пары добавляются по порядку: 0↔6, 1↔7, 2↔8, 3↔9, 4↔10, 5↔11

@@ -36,7 +36,7 @@ export default function WheelPanel({
   lastPoints,
   boardPx = BOARD_W,
 }: WheelPanelProps) {
-  const scoreDisplay = Number.isInteger(score) ? String(score) : score.toFixed(1);
+  const scoreDisplay = String(score);
   const wheelSize = boardPx * 0.92;
   const R = wheelSize / 2 - 4;
   const innerR = R * 0.38;
@@ -138,7 +138,7 @@ export default function WheelPanel({
                 whiteSpace: "nowrap",
               }}
             >
-              -{Number.isInteger(lastPoints) ? lastPoints : lastPoints.toFixed(1)}
+              -{lastPoints}
             </span>
           )}
         </div>
