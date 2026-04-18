@@ -13,8 +13,6 @@ export default function Index() {
     gridRows,
     score,
     comboScore,
-    bestScore,
-    bestCombo,
     scoreAnim,
     lastPoints,
     poppingCells,
@@ -77,8 +75,6 @@ export default function Index() {
             onSwap={handleSwap}
             score={score}
             comboScore={comboScore}
-            bestScore={bestScore}
-            bestCombo={bestCombo}
             scoreAnim={scoreAnim}
             lastPoints={lastPoints}
             boardPx={boardPx}

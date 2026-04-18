@@ -14,8 +14,6 @@ interface WheelPanelProps {
   onSwap: () => void;
   score: number;
   comboScore: number;
-  bestScore: number;
-  bestCombo: number;
   scoreAnim: boolean;
   lastPoints: number | null;
   boardPx?: number;
@@ -34,13 +32,10 @@ export default function WheelPanel({
   onSwap,
   score,
   comboScore,
-  bestScore,
-  bestCombo,
   scoreAnim,
   lastPoints,
   boardPx = BOARD_W,
 }: WheelPanelProps) {
-  const phase2 = score >= 200;
   const scoreDisplay = Number.isInteger(score) ? String(score) : score.toFixed(1);
   const wheelSize = boardPx * 0.92;
   const R = wheelSize / 2 - 4;
@@ -122,9 +117,9 @@ export default function WheelPanel({
           className="font-mono font-medium leading-none relative"
           style={{
             fontSize: 24,
-            color: phase2 ? "#3a3a3a" : "#ffffff",
+            color: "#ffffff",
             transform: scoreAnim ? "scale(1.2)" : "scale(1)",
-            transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1), color 0.4s ease",
+            transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1)",
             display: "inline-block",
           }}
         >
@@ -143,35 +138,19 @@ export default function WheelPanel({
                 whiteSpace: "nowrap",
               }}
             >
-              +{Number.isInteger(lastPoints) ? lastPoints : lastPoints.toFixed(1)}
+              -{Number.isInteger(lastPoints) ? lastPoints : lastPoints.toFixed(1)}
             </span>
           )}
         </div>
         <div className="font-mono" style={{ color: "#555", fontSize: 9 }}>очки</div>
       </div>
 
-      {/* Рекорд — правый верхний угол */}
+      {/* Схемы — правый верхний угол */}
       <div className="absolute text-right" style={{ right: 0, top: 4 }}>
-        <div className="font-mono font-medium leading-none" style={{ fontSize: 16, color: "#4a4a4a" }}>
-          {Number.isInteger(bestScore) ? bestScore : bestScore.toFixed(1)} <span style={{ color: "#3a3a3a" }}>/</span> {bestCombo}
-        </div>
-      </div>
-
-      {/* Комбо-счётчик — нижний левый угол */}
-      <div className="absolute" style={{ left: 0, bottom: 4 }}>
-        <div
-          className="font-mono font-medium leading-none"
-          style={{
-            fontSize: phase2 ? 28 : 16,
-            color: phase2 ? "#ffffff" : comboScore > 0 ? "#888" : "#3a3a3a",
-            transition: "font-size 0.4s ease, color 0.4s ease",
-          }}
-        >
+        <div className="font-mono font-medium leading-none" style={{ fontSize: 24, color: "#ffffff" }}>
           {comboScore}
         </div>
-        {phase2 && (
-          <div className="font-mono" style={{ color: "#555", fontSize: 9 }}>схемы</div>
-        )}
+        <div className="font-mono" style={{ color: "#555", fontSize: 9 }}>схемы</div>
       </div>
 
       {/* Кнопка отмены — нижний правый угол, появляется при 50 очках */}
