@@ -34,6 +34,8 @@ export function useGameState() {
   const setGridRows = (v: number) => { gridRowsRef.current = v; setGridRowsState(v); };
   const [score, setScore] = useState(1000);
   const scoreRef = useRef(1000);
+  const [progress, setProgress] = useState(0);
+  const progressRef = useRef(0);
   const [isWin, setIsWin] = useState(false);
   const [comboScore, setComboScore] = useState(0);
   const [currentColorId, setCurrentColorId] = useState<number>(() => randColorIdFromActive(initialActiveIds));
@@ -192,12 +194,7 @@ export function useGameState() {
     return dfs(0) ? [...result] : null;
   };
 
-  // Возвращает очки за пару в зависимости от текущего счёта
-  const getPairPoints = (currentScore: number): number => {
-    if (currentScore >= 300) return 0.1;
-    if (currentScore >= 200) return 0.5;
-    return POINTS_PAIR;
-  };
+  const getPairPoints = (_currentScore: number): number => POINTS_PAIR;
 
   // Чистая функция: ищет одно совпадение на всей доске (приоритет: тетрада > триада > пара)
   // Возвращает { cells, points } или null
@@ -376,6 +373,11 @@ export function useGameState() {
               if (newScore <= 0) setIsWin(true);
               return newScore;
             });
+            setProgress((p) => {
+              const newProgress = p + pts;
+              progressRef.current = newProgress;
+              return newProgress;
+            });
             // Комбо-счётчик: +1 за каждую триаду или тетраду
             if (pts >= POINTS_TRIAD) {
               setComboScore((c) => {
@@ -424,7 +426,7 @@ export function useGameState() {
       if (targetRow === -1) return;
 
       const colorId = currentColorId;
-      const activeColorIds = getActiveColorIds(scoreRef.current);
+      const activeColorIds = getActiveColorIds(progressRef.current);
       const rows = gridRef.current.length;
       const cols = gridRef.current[0]?.length ?? gridColsRef.current;
       const cs = getCellSize(cols);
@@ -559,12 +561,12 @@ export function useGameState() {
     }
   }, [grid, gameOver, score]);
 
-  // Разблокировка новых цветов + расширение поля каждые 25 очков
+  // Разблокировка новых цветов + расширение поля по прогрессу
   useEffect(() => {
-    const activeIds = getActiveColorIds(score);
+    const activeIds = getActiveColorIds(progress);
     const newLen = activeIds.length;
     if (newLen > prevActiveLenRef.current) {
-      const added = COLOR_LEVELS.find((l) => l.threshold === score);
+      const added = COLOR_LEVELS.find((l) => l.threshold === progress);
       if (added) {
         const names = added.ids.map((id) => ITTEN_COLORS[id].name);
         // Показываем уведомление о новых цветах после небольшой задержки
@@ -581,7 +583,7 @@ export function useGameState() {
       }
 
       // Расширяем поле только если размер реально изменился
-      const { cols: newCols, rows: newRows } = getGridSize(score);
+      const { cols: newCols, rows: newRows } = getGridSize(progress);
       const prevCols = gridColsRef.current;
       const prevRows = gridRowsRef.current;
       if (newCols !== prevCols || newRows !== prevRows) {
@@ -605,7 +607,7 @@ export function useGameState() {
       }
     }
     prevActiveLenRef.current = newLen;
-  }, [score]);
+  }, [progress]);
 
   const restartGame = () => {
     const startIds = getActiveColorIds(0);
@@ -619,6 +621,8 @@ export function useGameState() {
     setNextColorId(secondColor);
     setScore(1000);
     scoreRef.current = 1000;
+    setProgress(0);
+    progressRef.current = 0;
     setIsWin(false);
     setComboScore(0);
     setPoppingCells(new Set());
@@ -634,11 +638,11 @@ export function useGameState() {
     setFlyingTile(null);
   };
 
-  const activeColorIds = getActiveColorIds(score);
-  const undoUnlocked = score >= 50;
+  const activeColorIds = getActiveColorIds(progress);
+  const undoUnlocked = progress >= 50;
   const canUndo = undoUnlocked && !!undoSnapshot && !undoUsed;
-  const showNextColor = score >= 75;
-  const swapUnlocked = score >= 100;
+  const showNextColor = progress >= 75;
+  const swapUnlocked = progress >= 100;
 
   const handleSwap = useCallback(() => {
     if (!swapUnlocked || gameOver || newColorsNotice) return;
