@@ -58,8 +58,9 @@ export const BASE_COLS = 5;
 export const BASE_ROWS = 5;
 export const BOARD_PX = 330;
 
-export const getGridSize = (_activeCount: number): { cols: number; rows: number } => {
-  return { cols: BASE_COLS, rows: BASE_ROWS };
+export const getGridSize = (score: number): { cols: number; rows: number } => {
+  const extra = score >= 75 ? 1 : 0;
+  return { cols: BASE_COLS + extra, rows: BASE_ROWS + extra };
 };
 
 export const getCellSize = (cols: number): number => {

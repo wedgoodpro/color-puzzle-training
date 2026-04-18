@@ -15,7 +15,7 @@ export function useGameState() {
   const boardPx = Math.min(330, Math.floor(window.innerWidth - 24));
 
   const initialActiveIds = getActiveColorIds(0);
-  const { cols: initCols, rows: initRows } = getGridSize(initialActiveIds.length);
+  const { cols: initCols, rows: initRows } = getGridSize(0);
 
   const [grid, setGridState] = useState<Grid>(emptyGrid(initRows, initCols));
   const gridRef = useRef<Grid>(emptyGrid(initRows, initCols));
@@ -579,7 +579,7 @@ export function useGameState() {
       }
 
       // Расширяем поле только если размер реально изменился
-      const { cols: newCols, rows: newRows } = getGridSize(newLen);
+      const { cols: newCols, rows: newRows } = getGridSize(score);
       const prevCols = gridColsRef.current;
       const prevRows = gridRowsRef.current;
       if (newCols !== prevCols || newRows !== prevRows) {
@@ -607,7 +607,7 @@ export function useGameState() {
 
   const restartGame = () => {
     const startIds = getActiveColorIds(0);
-    const { cols, rows } = getGridSize(startIds.length);
+    const { cols, rows } = getGridSize(0);
     setGrid(emptyGrid(rows, cols));
     setGridCols(cols);
     setGridRows(rows);
