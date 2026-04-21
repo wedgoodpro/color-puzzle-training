@@ -1,10 +1,52 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import GameBoard from "@/game/GameBoard";
 import { GameOverModal, WinModal } from "@/game/GameOverlay";
-import { BG } from "@/game/constants";
+import { BG, GAP, ITTEN_COLORS } from "@/game/constants";
 import WheelPanel from "@/game/WheelPanel";
 import NewColorsOverlay from "@/game/NewColorsOverlay";
 import { useGameState } from "@/game/useGameState";
+
+function FlyingTilePortal({ col, colorId, targetRow, cellSize, boardRect }: {
+  col: number; colorId: number; targetRow: number; cellSize: number; boardRect: DOMRect;
+}) {
+  const divRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = divRef.current;
+    if (!el) return;
+
+    const landX = boardRect.left + col * (cellSize + GAP) + window.scrollX;
+    const landY = boardRect.top + targetRow * (cellSize + GAP) + window.scrollY;
+    const startY = landY - cellSize - 12;
+    const hex = ITTEN_COLORS[colorId].hex;
+
+    el.style.position = "absolute";
+    el.style.left = `${landX}px`;
+    el.style.top = `${landY}px`;
+    el.style.width = `${cellSize}px`;
+    el.style.height = `${cellSize}px`;
+    el.style.backgroundColor = hex;
+    el.style.borderRadius = "2px";
+    el.style.zIndex = "9999";
+    el.style.pointerEvents = "none";
+    el.style.transform = `translateY(${startY - landY}px)`;
+    el.style.transition = "none";
+    el.style.willChange = "transform";
+
+    const r1 = requestAnimationFrame(() => {
+      const r2 = requestAnimationFrame(() => {
+        if (!divRef.current) return;
+        divRef.current.style.transition = "transform 300ms cubic-bezier(0.34,1.4,0.64,1)";
+        divRef.current.style.transform = "translateY(0px)";
+      });
+      return () => cancelAnimationFrame(r2);
+    });
+    return () => cancelAnimationFrame(r1);
+  }, []);
+
+  return <div ref={divRef} />;
+}
 
 export default function Index() {
   const {
@@ -45,6 +87,18 @@ export default function Index() {
     elapsedSeconds,
     darkColorsActive,
   } = useGameState();
+
+  const boardRef = useRef<HTMLDivElement>(null);
+  const [boardRect, setBoardRect] = useState<DOMRect | null>(null);
+
+  useEffect(() => {
+    const el = boardRef.current;
+    if (!el) return;
+    const update = () => setBoardRect(el.getBoundingClientRect());
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [gridCols, gridRows]);
 
   const [inspectLitIds, setInspectLitIds] = useState<Set<number>>(new Set());
 
@@ -92,14 +146,14 @@ export default function Index() {
             darkColorsActive={darkColorsActive}
           />
 
-          <div className="relative" style={{ overflow: "hidden", paddingTop: cellSize + 8, marginTop: -(cellSize + 8) }}>
+          <div className="relative">
             <GameBoard
               grid={grid}
               cols={gridCols}
               rows={gridRows}
               cellSize={cellSize}
               boardPx={boardPx}
-              flyingTile={flyingTile}
+              flyingTile={null}
               particles={particles}
               poppingCells={poppingCells}
               pairPoppingCells={pairPoppingCells}
@@ -111,9 +165,23 @@ export default function Index() {
               onColumnHover={setHoverCol}
               onCellPress={handleCellPress}
               onCellRelease={handleCellRelease}
+              boardRef={boardRef}
             />
             <NewColorsOverlay notice={newColorsNotice} />
           </div>
+
+          {/* Летящий кубик — рендерится через portal поверх всего, не мешает анимации */}
+          {flyingTile && boardRect && createPortal(
+            <FlyingTilePortal
+              key={flyingTile.progress}
+              col={flyingTile.col}
+              colorId={flyingTile.colorId}
+              targetRow={flyingTile.targetRow}
+              cellSize={cellSize}
+              boardRect={boardRect}
+            />,
+            document.body
+          )}
 
           <a
             href="https://vk.ru/fotoklubpro"

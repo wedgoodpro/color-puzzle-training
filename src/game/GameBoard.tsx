@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, memo } from "react";
+import React from "react";
 import {
   BOARD_W, GAP,
   ITTEN_COLORS, CELL_EMPTY, CELL_EMPTY_HOVER,
@@ -26,50 +26,6 @@ interface GameBoardProps {
   boardRef?: React.RefObject<HTMLDivElement>;
 }
 
-// Летящий кубик — все стили управляются только через DOM (не через React props),
-// чтобы ре-рендеры не ломали анимацию.
-const FlyingTileView = memo(function FlyingTileView({
-  col, colorId, targetRow, cellSize, boardH,
-}: { col: number; colorId: number; targetRow: number; cellSize: number; boardH: number; willMatch: boolean }) {
-  const divRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = divRef.current;
-    if (!el) return;
-
-    const landY = targetRow * (cellSize + GAP);
-    const left = col * (cellSize + GAP);
-    // Кубик стартует СВЕРХУ (выше верхнего края доски) и падает вниз на своё место
-    const startOffset = -(landY + cellSize + 8);
-    const hex = ITTEN_COLORS[colorId].hex;
-
-    el.style.position = "absolute";
-    el.style.left = `${left}px`;
-    el.style.top = `${landY}px`;
-    el.style.width = `${cellSize}px`;
-    el.style.height = `${cellSize}px`;
-    el.style.backgroundColor = hex;
-    el.style.borderRadius = "2px";
-    el.style.zIndex = "10";
-    el.style.pointerEvents = "none";
-    el.style.transform = `translateY(${startOffset}px)`;
-    el.style.transition = "none";
-    el.style.willChange = "transform";
-
-    const r1 = requestAnimationFrame(() => {
-      const r2 = requestAnimationFrame(() => {
-        if (!divRef.current) return;
-        divRef.current.style.transition = "transform 300ms cubic-bezier(0.34,1.4,0.64,1)";
-        divRef.current.style.transform = "translateY(0px)";
-      });
-      return () => cancelAnimationFrame(r2);
-    });
-    return () => cancelAnimationFrame(r1);
-  }, []);
-
-  // Никаких style/className — React не трогает DOM этого элемента
-  return <div ref={divRef} />;
-});
 
 export default function GameBoard({
   grid,
@@ -223,18 +179,7 @@ export default function GameBoard({
         })
       )}
 
-      {/* Летящий кубик */}
-      {flyingTile && (
-        <FlyingTileView
-          key={flyingTile.progress}
-          col={flyingTile.col}
-          colorId={flyingTile.colorId}
-          targetRow={flyingTile.targetRow}
-          cellSize={cellSize}
-          boardH={boardH}
-          willMatch={flyingTile.willMatch}
-        />
-      )}
+
 
       {/* Particles */}
       {particles.map((p) => {
