@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, memo } from "react";
 import {
   BOARD_W, GAP,
   ITTEN_COLORS, CELL_EMPTY, CELL_EMPTY_HOVER,
@@ -27,7 +27,7 @@ interface GameBoardProps {
 
 // Летящий кубик — все стили управляются только через DOM (не через React props),
 // чтобы ре-рендеры от расширения сетки не ломали анимацию.
-function FlyingTileView({
+const FlyingTileView = memo(function FlyingTileView({
   col, colorId, targetRow, cellSize, boardH,
 }: { col: number; colorId: number; targetRow: number; cellSize: number; boardH: number; willMatch: boolean }) {
   const divRef = useRef<HTMLDivElement>(null);
@@ -76,7 +76,7 @@ function FlyingTileView({
       style={{ backgroundColor: hex, zIndex: 10 }}
     />
   );
-}
+});
 
 export default function GameBoard({
   grid,
@@ -148,12 +148,13 @@ export default function GameBoard({
               height: cellSize,
               backgroundColor: hoverCol === ci ? CELL_EMPTY_HOVER : CELL_EMPTY,
               transition: "background-color 0.1s",
+              zIndex: 1,
             }}
           />
         ))
       )}
 
-      {/* Цветные ячейки */}
+      {/* Цветные ячейки — pointer-events-none, анимации не трогаем */}
       {colorCells.map(({ key, ci, ri, colorId, isPopping, dropFrom }) => {
         const top = ri * (cellSize + GAP);
         const dur = gravityMs > 0 ? gravityMs : 300;
@@ -172,11 +173,10 @@ export default function GameBoard({
         }
 
         const hex = ITTEN_COLORS[colorId].hex;
-        const elemKey = key;
         return (
           <div
-            key={elemKey}
-            className="absolute rounded-sm"
+            key={key}
+            className="absolute pointer-events-none rounded-sm"
             style={{
               left: ci * (cellSize + GAP),
               top,
@@ -186,9 +186,27 @@ export default function GameBoard({
               animation: anim,
               ["--drop" as string]: dropFrom !== undefined ? `${dropFrom}px` : "0px",
               zIndex: isReview ? 3 : 2,
-              cursor: onCellClick ? "pointer" : undefined,
             }}
-            onClick={onCellClick ? (e) => { e.stopPropagation(); onCellClick(colorId); } : undefined}
+          />
+        );
+      })}
+
+      {/* Прозрачный кликабельный слой поверх цветных ячеек — только для инспекции */}
+      {onCellClick && colorCells.map(({ key, ci, ri, colorId, isPopping }) => {
+        if (isPopping) return null;
+        return (
+          <div
+            key={`hit-${key}`}
+            className="absolute rounded-sm cursor-pointer"
+            style={{
+              left: ci * (cellSize + GAP),
+              top: ri * (cellSize + GAP),
+              width: cellSize,
+              height: cellSize,
+              zIndex: 5,
+              opacity: 0,
+            }}
+            onClick={(e) => { e.stopPropagation(); onCellClick(colorId); }}
           />
         );
       })}
