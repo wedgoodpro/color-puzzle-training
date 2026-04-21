@@ -32,8 +32,8 @@ export function useGameState() {
   const gridRowsRef = useRef(initRows);
   const setGridCols = (v: number) => { gridColsRef.current = v; setGridColsState(v); };
   const setGridRows = (v: number) => { gridRowsRef.current = v; setGridRowsState(v); };
-  const [score, setScore] = useState(1000);
-  const scoreRef = useRef(1000);
+  const [score, setScore] = useState(500);
+  const scoreRef = useRef(500);
   const [progress, setProgress] = useState(0);
   const progressRef = useRef(0);
   const [isWin, setIsWin] = useState(false);
@@ -627,8 +627,8 @@ export function useGameState() {
     const secondColor = randColorIdFromActive(startIds, firstColor);
     setCurrentColorId(firstColor);
     setNextColorId(secondColor);
-    setScore(1000);
-    scoreRef.current = 1000;
+    setScore(500);
+    scoreRef.current = 500;
     setProgress(0);
     progressRef.current = 0;
     setIsWin(false);
