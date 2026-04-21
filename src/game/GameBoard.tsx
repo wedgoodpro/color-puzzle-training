@@ -32,25 +32,26 @@ const FlyingTileView = memo(function FlyingTileView({
   col, colorId, targetRow, cellSize, boardH,
 }: { col: number; colorId: number; targetRow: number; cellSize: number; boardH: number; willMatch: boolean }) {
   const divRef = useRef<HTMLDivElement>(null);
-  const hex = ITTEN_COLORS[colorId].hex;
-
-  const snapshot = useRef({
-    landY: targetRow * (cellSize + GAP),
-    left: col * (cellSize + GAP),
-    size: cellSize,
-    offset: boardH + cellSize - targetRow * (cellSize + GAP),
-  });
 
   useEffect(() => {
     const el = divRef.current;
     if (!el) return;
-    const { landY, left, size, offset } = snapshot.current;
 
+    const landY = targetRow * (cellSize + GAP);
+    const left = col * (cellSize + GAP);
+    const offset = boardH + cellSize - landY;
+    const hex = ITTEN_COLORS[colorId].hex;
+
+    // Все стили — только через DOM, React не трогает этот элемент (нет style в JSX)
     el.style.position = "absolute";
     el.style.left = `${left}px`;
     el.style.top = `${landY}px`;
-    el.style.width = `${size}px`;
-    el.style.height = `${size}px`;
+    el.style.width = `${cellSize}px`;
+    el.style.height = `${cellSize}px`;
+    el.style.backgroundColor = hex;
+    el.style.borderRadius = "2px";
+    el.style.zIndex = "10";
+    el.style.pointerEvents = "none";
     el.style.transform = `translateY(${offset}px)`;
     el.style.transition = "none";
     el.style.willChange = "transform";
@@ -66,13 +67,8 @@ const FlyingTileView = memo(function FlyingTileView({
     return () => cancelAnimationFrame(r1);
   }, []);
 
-  return (
-    <div
-      ref={divRef}
-      className="pointer-events-none rounded-sm"
-      style={{ backgroundColor: hex, zIndex: 10 }}
-    />
-  );
+  // Никаких style/className — React не трогает DOM этого элемента
+  return <div ref={divRef} />;
 });
 
 export default function GameBoard({
