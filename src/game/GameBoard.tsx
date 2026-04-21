@@ -24,57 +24,55 @@ interface GameBoardProps {
   boardRef?: React.RefObject<HTMLDivElement>;
 }
 
-// Летящий кубик — перемонтируется при каждом броске через key
-// ВАЖНО: все позиционные параметры фиксируются при монтировании через ref,
-// чтобы расширение сетки в середине игры не ломало анимацию.
+// Летящий кубик — все стили управляются только через DOM (не через React props),
+// чтобы ре-рендеры от расширения сетки не ломали анимацию.
 function FlyingTileView({
-  col, colorId, targetRow, cellSize, boardH, willMatch,
+  col, colorId, targetRow, cellSize, boardH,
 }: { col: number; colorId: number; targetRow: number; cellSize: number; boardH: number; willMatch: boolean }) {
-  // Фиксируем параметры при монтировании — они не должны меняться во время полёта
-  const fixedLandY = useRef(targetRow * (cellSize + GAP));
-  const fixedStartOffset = useRef(boardH + cellSize - fixedLandY.current);
-  const fixedLeft = useRef(col * (cellSize + GAP));
-  const fixedCellSize = useRef(cellSize);
   const divRef = useRef<HTMLDivElement>(null);
   const hex = ITTEN_COLORS[colorId].hex;
+
+  // Снапшот параметров на момент монтирования — больше не меняются
+  const snapshot = useRef({
+    landY: targetRow * (cellSize + GAP),
+    left: col * (cellSize + GAP),
+    size: cellSize,
+    offset: boardH + cellSize - targetRow * (cellSize + GAP),
+  });
 
   useEffect(() => {
     const el = divRef.current;
     if (!el) return;
-    // Устанавливаем зафиксированные начальные стили напрямую
-    el.style.left = `${fixedLeft.current}px`;
-    el.style.top = `${fixedLandY.current}px`;
-    el.style.width = `${fixedCellSize.current}px`;
-    el.style.height = `${fixedCellSize.current}px`;
-    el.style.transform = `translateY(${fixedStartOffset.current}px)`;
-    el.style.transition = "none";
+    const { landY, left, size, offset } = snapshot.current;
 
-    const raf1 = requestAnimationFrame(() => {
-      const raf2 = requestAnimationFrame(() => {
+    // Сразу ставим все стили через DOM — React их не трогает (нет style в JSX)
+    el.style.position = "absolute";
+    el.style.left = `${left}px`;
+    el.style.top = `${landY}px`;
+    el.style.width = `${size}px`;
+    el.style.height = `${size}px`;
+    el.style.transform = `translateY(${offset}px)`;
+    el.style.transition = "none";
+    el.style.willChange = "transform";
+
+    // Два rAF: первый — браузер фиксирует начальную позицию, второй — запускает transition
+    const r1 = requestAnimationFrame(() => {
+      const r2 = requestAnimationFrame(() => {
         if (!divRef.current) return;
         divRef.current.style.transition = "transform 300ms cubic-bezier(0.34,1.2,0.64,1)";
         divRef.current.style.transform = "translateY(0px)";
       });
-      return () => cancelAnimationFrame(raf2);
+      return () => cancelAnimationFrame(r2);
     });
-    return () => cancelAnimationFrame(raf1);
+    return () => cancelAnimationFrame(r1);
   }, []);
 
+  // Никаких style-пропов кроме цвета и z-index — React не будет трогать transform/top/left
   return (
     <div
       ref={divRef}
-      className="absolute pointer-events-none rounded-sm"
-      style={{
-        left: fixedLeft.current,
-        top: fixedLandY.current,
-        width: fixedCellSize.current,
-        height: fixedCellSize.current,
-        backgroundColor: hex,
-        zIndex: 10,
-        transform: `translateY(${fixedStartOffset.current}px)`,
-        transition: "none",
-        willChange: "transform",
-      }}
+      className="pointer-events-none rounded-sm"
+      style={{ backgroundColor: hex, zIndex: 10 }}
     />
   );
 }
