@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import GameBoard from "@/game/GameBoard";
 import { GameOverModal, WinModal } from "@/game/GameOverlay";
@@ -16,9 +16,13 @@ function FlyingTilePortal({ col, colorId, targetRow, cellSize, boardRect }: {
     const el = divRef.current;
     if (!el) return;
 
-    const landX = boardRect.left + col * (cellSize + GAP) + window.scrollX;
-    const landY = boardRect.top + targetRow * (cellSize + GAP) + window.scrollY;
-    const startY = landY - cellSize - 12;
+    const sx = window.scrollX;
+    const sy = window.scrollY;
+    const landX = boardRect.left + col * (cellSize + GAP) + sx;
+    const landY = boardRect.top + targetRow * (cellSize + GAP) + sy;
+    // Кубик стартует прямо над верхним краем доски и падает вниз на место
+    const startAbsY = boardRect.top + sy - cellSize;
+    const translateStart = startAbsY - landY;
     const hex = ITTEN_COLORS[colorId].hex;
 
     el.style.position = "absolute";
@@ -30,7 +34,7 @@ function FlyingTilePortal({ col, colorId, targetRow, cellSize, boardRect }: {
     el.style.borderRadius = "2px";
     el.style.zIndex = "9999";
     el.style.pointerEvents = "none";
-    el.style.transform = `translateY(${startY - landY}px)`;
+    el.style.transform = `translateY(${translateStart}px)`;
     el.style.transition = "none";
     el.style.willChange = "transform";
 
@@ -89,16 +93,6 @@ export default function Index() {
   } = useGameState();
 
   const boardRef = useRef<HTMLDivElement>(null);
-  const [boardRect, setBoardRect] = useState<DOMRect | null>(null);
-
-  useEffect(() => {
-    const el = boardRef.current;
-    if (!el) return;
-    const update = () => setBoardRect(el.getBoundingClientRect());
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, [gridCols, gridRows]);
 
   const [inspectLitIds, setInspectLitIds] = useState<Set<number>>(new Set());
 
@@ -171,16 +165,16 @@ export default function Index() {
           </div>
 
           {/* Летящий кубик — рендерится через portal поверх всего, не мешает анимации */}
-          {flyingTile && boardRect && createPortal(
+          {flyingTile && boardRef.current && createPortal(
             <FlyingTilePortal
-              key={flyingTile.progress}
               col={flyingTile.col}
               colorId={flyingTile.colorId}
               targetRow={flyingTile.targetRow}
               cellSize={cellSize}
-              boardRect={boardRect}
+              boardRect={boardRef.current.getBoundingClientRect()}
             />,
-            document.body
+            document.body,
+            String(flyingTile.progress)
           )}
 
           <a
