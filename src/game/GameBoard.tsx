@@ -26,14 +26,13 @@ interface GameBoardProps {
 }
 
 // Летящий кубик — все стили управляются только через DOM (не через React props),
-// чтобы ре-рендеры от расширения сетки не ломали анимацию.
+// чтобы ре-рендеры не ломали анимацию.
 const FlyingTileView = memo(function FlyingTileView({
   col, colorId, targetRow, cellSize, boardH,
 }: { col: number; colorId: number; targetRow: number; cellSize: number; boardH: number; willMatch: boolean }) {
   const divRef = useRef<HTMLDivElement>(null);
   const hex = ITTEN_COLORS[colorId].hex;
 
-  // Снапшот параметров на момент монтирования — больше не меняются
   const snapshot = useRef({
     landY: targetRow * (cellSize + GAP),
     left: col * (cellSize + GAP),
@@ -46,7 +45,6 @@ const FlyingTileView = memo(function FlyingTileView({
     if (!el) return;
     const { landY, left, size, offset } = snapshot.current;
 
-    // Сразу ставим все стили через DOM — React их не трогает (нет style в JSX)
     el.style.position = "absolute";
     el.style.left = `${left}px`;
     el.style.top = `${landY}px`;
@@ -56,7 +54,6 @@ const FlyingTileView = memo(function FlyingTileView({
     el.style.transition = "none";
     el.style.willChange = "transform";
 
-    // Два rAF: первый — браузер фиксирует начальную позицию, второй — запускает transition
     const r1 = requestAnimationFrame(() => {
       const r2 = requestAnimationFrame(() => {
         if (!divRef.current) return;
@@ -68,7 +65,6 @@ const FlyingTileView = memo(function FlyingTileView({
     return () => cancelAnimationFrame(r1);
   }, []);
 
-  // Никаких style-пропов кроме цвета и z-index — React не будет трогать transform/top/left
   return (
     <div
       ref={divRef}
@@ -99,15 +95,23 @@ export default function GameBoard({
   const boardW = boardPx;
   const boardH = rows * (cellSize + GAP) - GAP;
 
+  const actualRows = grid.length;
+  const actualCols = grid[0]?.length ?? 0;
+
+  // Строим карту занятых ячеек: "ri-ci" → colorId
+  const occupiedMap = new Map<string, number>();
+  for (let ri = 0; ri < actualRows; ri++) {
+    for (let ci = 0; ci < actualCols; ci++) {
+      const cell = grid[ri]?.[ci];
+      if (cell != null) occupiedMap.set(`${ri}-${ci}`, cell.colorId);
+    }
+  }
+
+  // Цветные ячейки для анимаций
   const colorCells: {
     key: string; ci: number; ri: number;
     colorId: number; isPopping: boolean; dropFrom?: number;
   }[] = [];
-
-  const actualRows = grid.length;
-  const actualCols = grid[0]?.length ?? 0;
-
-
 
   for (let ci = 0; ci < actualCols; ci++) {
     let slotIdx = 0;
@@ -130,9 +134,9 @@ export default function GameBoard({
     <div
       ref={boardRef}
       className="relative overflow-visible"
-      style={{ width: boardW, height: boardH }}
+      style={{ width: boardW, height: boardH, clipPath: "inset(0 0 -9999px 0)" }}
     >
-      {/* Фоновые ячейки */}
+      {/* Фоновые ячейки (zIndex 1) — всегда кликабельны */}
       {Array.from({ length: actualRows }, (_, ri) =>
         Array.from({ length: actualCols }, (_, ci) => (
           <div
@@ -154,7 +158,7 @@ export default function GameBoard({
         ))
       )}
 
-      {/* Цветные ячейки — pointer-events-none, анимации не трогаем */}
+      {/* Цветные ячейки (zIndex 2-3) — pointer-events-none, только визуал и анимации */}
       {colorCells.map(({ key, ci, ri, colorId, isPopping, dropFrom }) => {
         const top = ri * (cellSize + GAP);
         const dur = gravityMs > 0 ? gravityMs : 300;
@@ -191,25 +195,30 @@ export default function GameBoard({
         );
       })}
 
-      {/* Прозрачный кликабельный слой поверх цветных ячеек — только для инспекции */}
-      {onCellClick && colorCells.map(({ key, ci, ri, colorId, isPopping }) => {
-        if (isPopping) return null;
-        return (
-          <div
-            key={`hit-${key}`}
-            className="absolute rounded-sm cursor-pointer"
-            style={{
-              left: ci * (cellSize + GAP),
-              top: ri * (cellSize + GAP),
-              width: cellSize,
-              height: cellSize,
-              zIndex: 5,
-              opacity: 0,
-            }}
-            onClick={(e) => { e.stopPropagation(); onCellClick(colorId); }}
-          />
-        );
-      })}
+      {/* Кликабельный слой поверх занятых ячеек (zIndex 4) — для инспекции цвета */}
+      {onCellClick && Array.from({ length: actualRows }, (_, ri) =>
+        Array.from({ length: actualCols }, (_, ci) => {
+          const colorId = occupiedMap.get(`${ri}-${ci}`);
+          if (colorId === undefined) return null;
+          const cellKey = `${ri}-${ci}`;
+          if (poppingCells.has(cellKey) || pairPoppingCells.has(cellKey)) return null;
+          return (
+            <div
+              key={`hit-${ri}-${ci}`}
+              className="absolute rounded-sm cursor-pointer"
+              style={{
+                left: ci * (cellSize + GAP),
+                top: ri * (cellSize + GAP),
+                width: cellSize,
+                height: cellSize,
+                zIndex: 4,
+                opacity: 0,
+              }}
+              onClick={(e) => { e.stopPropagation(); onCellClick(colorId); }}
+            />
+          );
+        })
+      )}
 
       {/* Летящий кубик */}
       {flyingTile && (
