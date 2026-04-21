@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import {
   BOARD_W, GAP,
   ITTEN_COLORS, CELL_EMPTY, CELL_EMPTY_HOVER,
@@ -30,33 +30,30 @@ function FlyingTileView({
 }: { col: number; colorId: number; targetRow: number; cellSize: number; boardH: number; willMatch: boolean }) {
   const landY = targetRow * (cellSize + GAP);
   const startOffset = boardH + cellSize - landY;
-  const divRef = useRef<HTMLDivElement>(null);
   const hex = ITTEN_COLORS[colorId].hex;
-
-  useEffect(() => {
-    const el = divRef.current;
-    if (!el) return;
-    void el.getBoundingClientRect();
-    el.style.transition = "transform 300ms cubic-bezier(0.34,1.2,0.64,1)";
-    el.style.transform = "translateY(0px)";
-  }, []);
+  const animName = `fly-${startOffset}`;
 
   return (
-    <div
-      ref={divRef}
-      className="absolute pointer-events-none rounded-sm"
-      style={{
-        left: col * (cellSize + GAP),
-        top: landY,
-        width: cellSize,
-        height: cellSize,
-        backgroundColor: hex,
-        zIndex: 10,
-        transform: `translateY(${startOffset}px)`,
-        transition: "none",
-
-      }}
-    />
+    <>
+      <style>{`
+        @keyframes ${animName} {
+          from { transform: translateY(${startOffset}px); }
+          to   { transform: translateY(0px); }
+        }
+      `}</style>
+      <div
+        className="absolute pointer-events-none rounded-sm"
+        style={{
+          left: col * (cellSize + GAP),
+          top: landY,
+          width: cellSize,
+          height: cellSize,
+          backgroundColor: hex,
+          zIndex: 10,
+          animation: `${animName} 300ms cubic-bezier(0.34,1.2,0.64,1) forwards`,
+        }}
+      />
+    </>
   );
 }
 
