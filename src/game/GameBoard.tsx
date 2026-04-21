@@ -21,6 +21,7 @@ interface GameBoardProps {
   getFlyingY: (ft: FlyingTile) => number;
   onColumnClick: (col: number) => void;
   onColumnHover: (col: number | null) => void;
+  onCellClick?: (colorId: number) => void;
   boardRef?: React.RefObject<HTMLDivElement>;
 }
 
@@ -92,6 +93,7 @@ export default function GameBoard({
   reviewCells,
   onColumnClick,
   onColumnHover,
+  onCellClick,
   boardRef,
 }: GameBoardProps) {
   const boardW = boardPx;
@@ -174,7 +176,7 @@ export default function GameBoard({
         return (
           <div
             key={elemKey}
-            className="absolute pointer-events-none rounded-sm"
+            className="absolute rounded-sm"
             style={{
               left: ci * (cellSize + GAP),
               top,
@@ -184,7 +186,9 @@ export default function GameBoard({
               animation: anim,
               ["--drop" as string]: dropFrom !== undefined ? `${dropFrom}px` : "0px",
               zIndex: isReview ? 3 : 2,
+              cursor: onCellClick ? "pointer" : undefined,
             }}
+            onClick={onCellClick ? (e) => { e.stopPropagation(); onCellClick(colorId); } : undefined}
           />
         );
       })}

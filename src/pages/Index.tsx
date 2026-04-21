@@ -46,6 +46,13 @@ export default function Index() {
     darkColorsActive,
   } = useGameState();
 
+  const [inspectLitIds, setInspectLitIds] = useState<Set<number>>(new Set());
+
+  const handleCellClick = (colorId: number) => {
+    setInspectLitIds(new Set([colorId]));
+    setTimeout(() => setInspectLitIds(new Set()), 1500);
+  };
+
   const [copied, setCopied] = useState(false);
   const shareUrl = "https://fotovuz.ru/igra-kolorist";
 
@@ -65,7 +72,7 @@ export default function Index() {
         <div className="flex flex-col items-center gap-4 w-full pt-4">
 
           <WheelPanel
-            litColorIds={litColorIds}
+            litColorIds={inspectLitIds.size > 0 ? inspectLitIds : litColorIds}
             activeColorIds={activeColorIds}
             currentColorId={currentColorId}
             nextColorId={nextColorId}
@@ -100,6 +107,7 @@ export default function Index() {
               getFlyingY={() => 0}
               onColumnClick={handleColumnClick}
               onColumnHover={setHoverCol}
+              onCellClick={handleCellClick}
             />
             <NewColorsOverlay notice={newColorsNotice} />
           </div>
