@@ -180,7 +180,7 @@ export function WinModal({ onRestart }: WinModalProps) {
         </p>
         <p className="font-mono text-6xl font-medium text-white leading-none">0</p>
         <p className="font-mono text-sm mt-4" style={{ color: "#888" }}>
-          Ты обнулил счёт — так держать!
+          Это была отличная тренировка, не забудь повторить завтра!
         </p>
       </div>
       <button
