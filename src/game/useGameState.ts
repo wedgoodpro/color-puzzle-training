@@ -206,17 +206,16 @@ export function useGameState() {
     // Тетрады
     for (const tetrad of TETRADS) {
       const cells = findGroupOnBoard(g, rows, cols, tetrad);
-      if (cells) return { cells, points: POINTS_TETRAD };
+      if (cells) return { cells, points: cells.length };
     }
 
     // Триады
     for (const triad of TRIADS) {
       const cells = findGroupOnBoard(g, rows, cols, triad);
-      if (cells) return { cells, points: POINTS_TRIAD };
+      if (cells) return { cells, points: cells.length };
     }
 
     // Пары — прямые соседи комплементарных цветов
-    const pairPts = getPairPoints(scoreRef.current);
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         if (!g[row][col]) continue;
@@ -230,7 +229,8 @@ export function useGameState() {
           }
         }
         if (pairCells.length > 0) {
-          return { cells: [[row, col], ...pairCells] as [number, number][], points: pairPts * pairCells.length };
+          const cells: [number, number][] = [[row, col], ...pairCells];
+          return { cells, points: cells.length };
         }
       }
     }
@@ -248,7 +248,6 @@ export function useGameState() {
         const cells = findGroupOnBoard(g, rows, cols, tetrad);
         if (cells && cells.some(([r, c]) => r === row && c === col)) {
           toRemove = cells;
-          points = POINTS_TETRAD;
           break;
         }
       }
@@ -260,7 +259,6 @@ export function useGameState() {
           const cells = findGroupOnBoard(g, rows, cols, triad);
           if (cells && cells.some(([r, c]) => r === row && c === col)) {
             toRemove = cells;
-            points = POINTS_TRIAD;
             break;
           }
         }
@@ -268,7 +266,6 @@ export function useGameState() {
 
       // Приоритет 3: пара — прямые соседи комплементарного цвета
       if (toRemove.length === 0) {
-        const pairPts = getPairPoints(scoreRef.current);
         const complement = getComplement(colorId);
         const pairDirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
         for (const [dr, dc] of pairDirs) {
@@ -276,12 +273,12 @@ export function useGameState() {
           if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && g[nr][nc]?.colorId === complement) {
             if (toRemove.length === 0) toRemove.push([row, col]);
             toRemove.push([nr, nc]);
-            points += pairPts;
           }
         }
       }
 
       if (toRemove.length === 0) { isBusyRef.current = false; return; }
+      points = toRemove.length;
 
       const dedup = (arr: [number, number][]) => {
         const seen = new Set<string>();
