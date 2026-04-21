@@ -134,8 +134,16 @@ export const isCool = (id: number): boolean => COOL_IDS.has(id);
 export const randFromPool = (pool: number[]): number =>
   pool[Math.floor(Math.random() * pool.length)];
 
-// При каком счёте активируются тёмные цвета (счёт убывает, триггер — падение ≤ порога)
-export const DARK_COLOR_THRESHOLD = 300;
+// Уровни тёмных цветов: счёт убывает, тёмные появляются постепенно начиная с 150
+// Порядок: оранжевый↔синий, жёлтый↔фиолетовый, красный↔зелёный, затем промежуточные
+export const DARK_COLOR_LEVELS: { threshold: number; ids: number[] }[] = [
+  { threshold: 150, ids: [2, 14, 8, 20]  },  // оранжевый + коричневый, синий + тёмно-синий
+  { threshold: 125, ids: [0, 12, 6, 18]  },  // жёлтый + тёмно-жёлтый, фиолетовый + тёмно-фиолет
+  { threshold: 100, ids: [4, 16, 10, 22] },  // красный + бордовый, зелёный + тёмно-зелёный
+  { threshold: 75,  ids: [1, 13, 7, 19]  },  // жёлто-оранж + коричн-золот, сине-фиолет + тёмно-индиго
+  { threshold: 50,  ids: [3, 15, 9, 21]  },  // красно-оранж + тёмно-красн, сине-зелён + тёмно-бирюз
+  { threshold: 25,  ids: [5, 17, 11, 23] },  // красно-фиолет + тёмно-пурп, жёлто-зелён + оливковый
+];
 
 // Тёмный цвет для id 0–11: id + 12. Основной для id 12–23: id - 12.
 export const getDarkId = (id: number): number => id + 12;
@@ -183,13 +191,23 @@ export const getActiveColorIds = (score: number, currentScore?: number): number[
   return ids;
 };
 
-// Возвращает активные цвета с учётом текущего счёта (для тёмных)
+// Возвращает активные тёмные ids по текущему счёту
+export const getActiveDarkIds = (score: number): number[] => {
+  const ids: number[] = [];
+  for (const level of DARK_COLOR_LEVELS) {
+    if (score <= level.threshold) ids.push(...level.ids);
+  }
+  return ids;
+};
+
+// Возвращает активные цвета с учётом текущего счёта (светлые + тёмные)
 export const getActiveColorIdsWithDark = (progress: number, score: number): number[] => {
   const base = getActiveColorIds(progress);
-  if (score <= DARK_COLOR_THRESHOLD) {
-    return [...base, ...base.map((id) => id + 12)];
-  }
-  return base;
+  const dark = getActiveDarkIds(score).filter((id) => {
+    // Добавляем тёмный только если его светлый оригинал уже активен
+    return base.includes(id - 12);
+  });
+  return dark.length > 0 ? [...base, ...dark] : base;
 };
 
 export const randColorIdFromActive = (activeIds: number[], exclude?: number) => {

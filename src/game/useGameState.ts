@@ -8,7 +8,7 @@ import {
   emptyGrid, loadScores, getBestScore, saveScore,
   getGridSize, getCellSize, GAP,
   getBestCombo, saveBestCombo,
-  DARK_COLOR_THRESHOLD, isDark, getDarkId,
+  DARK_COLOR_LEVELS, getActiveDarkIds, isDark, getDarkId,
 } from "@/game/constants";
 
 export function useGameState() {
@@ -72,7 +72,7 @@ export function useGameState() {
   const startedAtRef = useRef<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState<number | null>(null);
   const [darkColorsActive, setDarkColorsActive] = useState(false);
-  const darkColorsActivatedRef = useRef(false);
+  const activatedDarkThresholdsRef = useRef<Set<number>>(new Set());
 
   const cellSize = Math.floor((boardPx - (gridCols - 1) * GAP) / gridCols);
 
@@ -376,12 +376,16 @@ export function useGameState() {
                 setElapsedSeconds(startedAtRef.current !== null ? Math.round((Date.now() - startedAtRef.current) / 1000) : null);
                 setIsWin(true);
               }
-              // Активируем тёмные цвета при первом падении ≤ 300
-              if (newScore <= DARK_COLOR_THRESHOLD && !darkColorsActivatedRef.current) {
-                darkColorsActivatedRef.current = true;
-                setDarkColorsActive(true);
-                setNewColorsNotice({ names: [], ids: [], isDark: true });
-                setTimeout(() => setNewColorsNotice(null), 3000);
+              // Активируем тёмные цвета постепенно по уровням
+              for (const level of DARK_COLOR_LEVELS) {
+                if (newScore <= level.threshold && !activatedDarkThresholdsRef.current.has(level.threshold)) {
+                  activatedDarkThresholdsRef.current.add(level.threshold);
+                  setDarkColorsActive(true);
+                  const darkIds = level.ids.filter((id) => id >= 12);
+                  setNewColorsNotice({ names: [], ids: darkIds, isDark: true });
+                  setTimeout(() => setNewColorsNotice(null), 2500);
+                  break; // только один уровень за раз
+                }
               }
               return newScore;
             });
@@ -654,7 +658,7 @@ export function useGameState() {
     colorFreqRef.current = {};
     setFlyingTile(null);
     setDarkColorsActive(false);
-    darkColorsActivatedRef.current = false;
+    activatedDarkThresholdsRef.current = new Set();
   };
 
   const activeColorIds = getActiveColorIdsWithDark(progress, score);

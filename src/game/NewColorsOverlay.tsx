@@ -45,7 +45,7 @@ export default function NewColorsOverlay({ notice }: NewColorsOverlayProps) {
         className="font-mono text-center"
         style={{ fontSize: 11, color: "#444", marginTop: 12, letterSpacing: "0.1em" }}
       >
-        {isDarkNotice ? "каждый цвет получил тёмный оттенок" : "поле расширилось"}
+        {isDarkNotice ? "новая тёмная пара" : "поле расширилось"}
       </div>
     </div>
   );
