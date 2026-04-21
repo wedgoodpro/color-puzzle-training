@@ -166,9 +166,16 @@ export function GameOverModal({ score, onRestart }: GameOverModalProps) {
 // WinModal — оверлей победы
 interface WinModalProps {
   onRestart: () => void;
+  elapsedSeconds?: number | null;
 }
 
-export function WinModal({ onRestart }: WinModalProps) {
+function formatTime(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return m > 0 ? `${m} мин ${s} сек` : `${s} сек`;
+}
+
+export function WinModal({ onRestart, elapsedSeconds }: WinModalProps) {
   return (
     <div
       className="fixed inset-0 flex flex-col items-center justify-center gap-8 z-50 animate-fade-in"
@@ -182,6 +189,11 @@ export function WinModal({ onRestart }: WinModalProps) {
         <p className="font-mono text-sm mt-4" style={{ color: "#888" }}>
           Это была отличная тренировка, не забудь повторить завтра!
         </p>
+        {elapsedSeconds != null && (
+          <p className="font-mono text-xs mt-2" style={{ color: "#555" }}>
+            время: {formatTime(elapsedSeconds)}
+          </p>
+        )}
       </div>
       <button
         onClick={onRestart}

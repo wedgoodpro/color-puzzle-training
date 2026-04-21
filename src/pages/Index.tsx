@@ -42,6 +42,7 @@ export default function Index() {
     reviewPending,
     reviewCells,
     handleReviewTap,
+    elapsedSeconds,
   } = useGameState();
 
   const [copied, setCopied] = useState(false);
@@ -186,7 +187,7 @@ export default function Index() {
       )}
 
       {isWin && (
-        <WinModal onRestart={restartGame} />
+        <WinModal onRestart={restartGame} elapsedSeconds={elapsedSeconds} />
       )}
 
       {gameOver && !isWin && (

@@ -68,6 +68,8 @@ export function useGameState() {
   // Undo: сохраняем snapshot до хода
   const [undoSnapshot, setUndoSnapshot] = useState<{ grid: Grid; currentColorId: number; nextColorId: number; score: number } | null>(null);
   const [undoUsed, setUndoUsed] = useState(false);
+  const startedAtRef = useRef<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number | null>(null);
 
   const cellSize = Math.floor((boardPx - (gridCols - 1) * GAP) / gridCols);
 
@@ -370,7 +372,10 @@ export function useGameState() {
             setScore((s) => {
               const newScore = Math.max(0, s - pts);
               scoreRef.current = newScore;
-              if (newScore <= 0) setIsWin(true);
+              if (newScore <= 0) {
+                setElapsedSeconds(startedAtRef.current !== null ? Math.round((Date.now() - startedAtRef.current) / 1000) : null);
+                setIsWin(true);
+              }
               return newScore;
             });
             setProgress((p) => {
@@ -430,6 +435,9 @@ export function useGameState() {
       const rows = gridRef.current.length;
       const cols = gridRef.current[0]?.length ?? gridColsRef.current;
       const cs = getCellSize(cols);
+
+      // Фиксируем время первого хода
+      if (startedAtRef.current === null) startedAtRef.current = Date.now();
 
       // Сохраняем snapshot для undo (один раз за игру пока не использован)
       setUndoSnapshot({
@@ -632,6 +640,8 @@ export function useGameState() {
     setLastPoints(null);
     setUndoSnapshot(null);
     setUndoUsed(false);
+    startedAtRef.current = null;
+    setElapsedSeconds(null);
     prevActiveLenRef.current = startIds.length;
     lastTwoColorsRef.current = [];
     colorFreqRef.current = {};
@@ -695,5 +705,6 @@ export function useGameState() {
     reviewPending,
     reviewCells,
     handleReviewTap,
+    elapsedSeconds,
   };
 }
