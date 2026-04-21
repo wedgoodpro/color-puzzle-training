@@ -43,6 +43,7 @@ export default function Index() {
     reviewCells,
     handleReviewTap,
     elapsedSeconds,
+    darkColorsActive,
   } = useGameState();
 
   const [copied, setCopied] = useState(false);
@@ -79,6 +80,7 @@ export default function Index() {
             scoreAnim={scoreAnim}
             lastPoints={lastPoints}
             boardPx={boardPx}
+            darkColorsActive={darkColorsActive}
           />
 
           <div className="relative">

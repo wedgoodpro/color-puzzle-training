@@ -1,5 +1,5 @@
 import ColorWheel from "@/game/ColorWheel";
-import { ITTEN_COLORS, BOARD_W, POINTS_TRIAD, POINTS_TETRAD } from "@/game/constants";
+import { ITTEN_COLORS, BOARD_W, POINTS_TRIAD, POINTS_TETRAD, getDarkId } from "@/game/constants";
 
 interface WheelPanelProps {
   litColorIds: Set<number>;
@@ -17,6 +17,7 @@ interface WheelPanelProps {
   scoreAnim: boolean;
   lastPoints: number | null;
   boardPx?: number;
+  darkColorsActive?: boolean;
 }
 
 export default function WheelPanel({
@@ -35,6 +36,7 @@ export default function WheelPanel({
   scoreAnim,
   lastPoints,
   boardPx = BOARD_W,
+  darkColorsActive = false,
 }: WheelPanelProps) {
   const scoreDisplay = String(score);
   const wheelSize = boardPx * 0.92;
@@ -49,7 +51,7 @@ export default function WheelPanel({
   return (
     <div className="relative" style={{ width: boardPx, height: wheelSize }}>
       <div className="absolute" style={{ left: (boardPx - wheelSize) / 2, top: 0 }}>
-        <ColorWheel litColorIds={litColorIds} activeColorIds={new Set(activeColorIds)} size={wheelSize} />
+        <ColorWheel litColorIds={litColorIds} activeColorIds={new Set(activeColorIds)} size={wheelSize} darkColorsActive={darkColorsActive} />
 
         {/* Следующий цвет — под основным, выглядывает снизу-справа */}
         {showNextColor && (

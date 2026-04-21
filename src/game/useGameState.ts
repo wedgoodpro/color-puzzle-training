@@ -4,10 +4,11 @@ import {
   POINTS_PAIR, POINTS_TRIAD, POINTS_TETRAD,
   Cell, Grid, Particle, FlyingTile,
   getComplement, getTriad, getTriadsForColor, getTetrad, getTetradsForColor,
-  getActiveColorIds, randColorIdFromActive, randFromPool,
+  getActiveColorIds, getActiveColorIdsWithDark, randColorIdFromActive, randFromPool,
   emptyGrid, loadScores, getBestScore, saveScore,
   getGridSize, getCellSize, GAP,
   getBestCombo, saveBestCombo,
+  DARK_COLOR_THRESHOLD, isDark, getDarkId,
 } from "@/game/constants";
 
 export function useGameState() {
@@ -61,7 +62,7 @@ export function useGameState() {
   const reviewPendingRef = useRef(false);
   const [reviewCells, setReviewCells] = useState<Set<string>>(new Set());
   const reviewResolveRef = useRef<(() => void) | null>(null);
-  const [newColorsNotice, setNewColorsNotice] = useState<{ names: string[]; ids: number[] } | null>(null);
+  const [newColorsNotice, setNewColorsNotice] = useState<{ names: string[]; ids: number[]; isDark?: boolean } | null>(null);
   const prevActiveLenRef = useRef(initialActiveIds.length);
   const lastTwoColorsRef = useRef<number[]>([]);
   const colorFreqRef = useRef<Record<number, number>>({});
@@ -70,6 +71,8 @@ export function useGameState() {
   const [undoUsed, setUndoUsed] = useState(false);
   const startedAtRef = useRef<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState<number | null>(null);
+  const [darkColorsActive, setDarkColorsActive] = useState(false);
+  const darkColorsActivatedRef = useRef(false);
 
   const cellSize = Math.floor((boardPx - (gridCols - 1) * GAP) / gridCols);
 
@@ -373,6 +376,13 @@ export function useGameState() {
                 setElapsedSeconds(startedAtRef.current !== null ? Math.round((Date.now() - startedAtRef.current) / 1000) : null);
                 setIsWin(true);
               }
+              // Активируем тёмные цвета при первом падении ≤ 300
+              if (newScore <= DARK_COLOR_THRESHOLD && !darkColorsActivatedRef.current) {
+                darkColorsActivatedRef.current = true;
+                setDarkColorsActive(true);
+                setNewColorsNotice({ names: [], ids: [], isDark: true });
+                setTimeout(() => setNewColorsNotice(null), 3000);
+              }
               return newScore;
             });
             setProgress((p) => {
@@ -428,7 +438,7 @@ export function useGameState() {
       if (targetRow === -1) return;
 
       const colorId = currentColorId;
-      const activeColorIds = getActiveColorIds(progressRef.current);
+      const activeColorIds = getActiveColorIdsWithDark(progressRef.current, scoreRef.current);
       const rows = gridRef.current.length;
       const cols = gridRef.current[0]?.length ?? gridColsRef.current;
       const cs = getCellSize(cols);
@@ -643,9 +653,11 @@ export function useGameState() {
     lastTwoColorsRef.current = [];
     colorFreqRef.current = {};
     setFlyingTile(null);
+    setDarkColorsActive(false);
+    darkColorsActivatedRef.current = false;
   };
 
-  const activeColorIds = getActiveColorIds(progress);
+  const activeColorIds = getActiveColorIdsWithDark(progress, score);
   const undoUnlocked = progress >= 50;
   const canUndo = undoUnlocked && !!undoSnapshot && !undoUsed;
   const showNextColor = progress >= 75;
@@ -703,5 +715,6 @@ export function useGameState() {
     reviewCells,
     handleReviewTap,
     elapsedSeconds,
+    darkColorsActive,
   };
 }

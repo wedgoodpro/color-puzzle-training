@@ -1,11 +1,13 @@
 import { ITTEN_COLORS } from "@/game/constants";
 
 interface NewColorsOverlayProps {
-  notice: { names: string[]; ids: number[] } | null;
+  notice: { names: string[]; ids: number[]; isDark?: boolean } | null;
 }
 
 export default function NewColorsOverlay({ notice }: NewColorsOverlayProps) {
   if (!notice) return null;
+
+  const isDarkNotice = notice.isDark;
 
   return (
     <div
@@ -22,7 +24,7 @@ export default function NewColorsOverlay({ notice }: NewColorsOverlayProps) {
         className="font-mono font-bold text-center"
         style={{ fontSize: 13, color: "#666", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 10 }}
       >
-        новые цвета
+        {isDarkNotice ? "тёмные оттенки" : "новые цвета"}
       </div>
       {notice.ids.map((id) => (
         <div
@@ -43,7 +45,7 @@ export default function NewColorsOverlay({ notice }: NewColorsOverlayProps) {
         className="font-mono text-center"
         style={{ fontSize: 11, color: "#444", marginTop: 12, letterSpacing: "0.1em" }}
       >
-        поле расширилось
+        {isDarkNotice ? "каждый цвет получил тёмный оттенок" : "поле расширилось"}
       </div>
     </div>
   );

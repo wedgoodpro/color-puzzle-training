@@ -1,5 +1,7 @@
-// 12 цветов круга Итена
+// 12 основных цветов круга Итена (ids 0–11)
 // Пары (через 6): 0↔6, 1↔7, 2↔8, 3↔9, 4↔10, 5↔11
+// Тёмные оттенки (ids 12–23): тёмная версия каждого цвета, id = original + 12
+// Тёмные пары: 12↔18, 13↔19, 14↔20, 15↔21, 16↔22, 17↔23
 export const ITTEN_COLORS = [
   { id: 0,  name: "Жёлтый",           hex: "#D4B84A" },
   { id: 1,  name: "Жёлто-оранжевый",  hex: "#C99240" },
@@ -13,6 +15,19 @@ export const ITTEN_COLORS = [
   { id: 9,  name: "Сине-зелёный",     hex: "#2E8070" },
   { id: 10, name: "Зелёный",          hex: "#2E7048" },
   { id: 11, name: "Жёлто-зелёный",    hex: "#6E8C3A" },
+  // Тёмные оттенки (id = original + 12)
+  { id: 12, name: "Тёмно-жёлтый",        hex: "#7A6820" },
+  { id: 13, name: "Коричнево-золотой",    hex: "#7A5218" },
+  { id: 14, name: "Коричневый",           hex: "#7A3E18" },
+  { id: 15, name: "Тёмно-красный",        hex: "#6E2818" },
+  { id: 16, name: "Бордовый",             hex: "#6E1A18" },
+  { id: 17, name: "Тёмно-пурпурный",      hex: "#5A1838" },
+  { id: 18, name: "Тёмно-фиолетовый",     hex: "#2E1A48" },
+  { id: 19, name: "Тёмно-индиго",         hex: "#1A1E4A" },
+  { id: 20, name: "Тёмно-синий",          hex: "#122C50" },
+  { id: 21, name: "Тёмно-бирюзовый",      hex: "#104030" },
+  { id: 22, name: "Тёмно-зелёный",        hex: "#103820" },
+  { id: 23, name: "Оливковый",            hex: "#384818" },
 ];
 
 // Триады равносторонние (через 4): [0,4,8], [1,5,9], [2,6,10], [3,7,11]
@@ -81,7 +96,7 @@ export const STORAGE_KEY = "colorist_scores_v4";
 export const BG = "#2A2A2A";
 export const CELL_EMPTY = "#363636";
 export const CELL_EMPTY_HOVER = "#404040";
-export const WHEEL_COUNT = ITTEN_COLORS.length;
+export const WHEEL_COUNT = 12; // только основные цвета на колесе
 
 export type Cell = { colorId: number; dropFrom?: number } | null;
 export type Grid = Cell[][];
@@ -119,26 +134,62 @@ export const isCool = (id: number): boolean => COOL_IDS.has(id);
 export const randFromPool = (pool: number[]): number =>
   pool[Math.floor(Math.random() * pool.length)];
 
-export const getComplement = (id: number): number => (id + 6) % 12;
+// При каком счёте активируются тёмные цвета (счёт убывает, триггер — падение ≤ порога)
+export const DARK_COLOR_THRESHOLD = 300;
 
-export const getTriad = (id: number): number[] | null =>
-  TRIADS.find((t) => t.includes(id)) ?? null;
+// Тёмный цвет для id 0–11: id + 12. Основной для id 12–23: id - 12.
+export const getDarkId = (id: number): number => id + 12;
+export const getBaseId = (id: number): number => id % 12;
+export const isDark = (id: number): boolean => id >= 12;
 
-export const getTriadsForColor = (id: number): number[][] =>
-  TRIADS.filter((t) => t.includes(id));
+// Дополнение: тёмные дополняют тёмные (12↔18, аналогично 0↔6 со сдвигом +12)
+export const getComplement = (id: number): number =>
+  isDark(id) ? ((id - 12 + 6) % 12) + 12 : (id + 6) % 12;
 
-export const getTetrad = (id: number): number[] | null =>
-  TETRADS.find((t) => t.includes(id)) ?? null;
+// Для тёмного цвета возвращаем те же триады что у оригинала, но с id+12
+export const getTriad = (id: number): number[] | null => {
+  const base = getBaseId(id);
+  const t = TRIADS.find((tr) => tr.includes(base));
+  if (!t) return null;
+  return isDark(id) ? t.map((x) => x + 12) : t;
+};
 
-export const getTetradsForColor = (id: number): number[][] =>
-  TETRADS.filter((t) => t.includes(id));
+export const getTriadsForColor = (id: number): number[][] => {
+  const base = getBaseId(id);
+  const baseTriads = TRIADS.filter((t) => t.includes(base));
+  if (!isDark(id)) return baseTriads;
+  return baseTriads.map((t) => t.map((x) => x + 12));
+};
 
-export const getActiveColorIds = (score: number): number[] => {
+export const getTetrad = (id: number): number[] | null => {
+  const base = getBaseId(id);
+  const t = TETRADS.find((te) => te.includes(base));
+  if (!t) return null;
+  return isDark(id) ? t.map((x) => x + 12) : t;
+};
+
+export const getTetradsForColor = (id: number): number[][] => {
+  const base = getBaseId(id);
+  const baseTetrads = TETRADS.filter((t) => t.includes(base));
+  if (!isDark(id)) return baseTetrads;
+  return baseTetrads.map((t) => t.map((x) => x + 12));
+};
+
+export const getActiveColorIds = (score: number, currentScore?: number): number[] => {
   const ids: number[] = [];
   for (const level of COLOR_LEVELS) {
     if (score >= level.threshold) ids.push(...level.ids);
   }
   return ids;
+};
+
+// Возвращает активные цвета с учётом текущего счёта (для тёмных)
+export const getActiveColorIdsWithDark = (progress: number, score: number): number[] => {
+  const base = getActiveColorIds(progress);
+  if (score <= DARK_COLOR_THRESHOLD) {
+    return [...base, ...base.map((id) => id + 12)];
+  }
+  return base;
 };
 
 export const randColorIdFromActive = (activeIds: number[], exclude?: number) => {
