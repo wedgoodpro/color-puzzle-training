@@ -92,7 +92,7 @@ export default function Index() {
             darkColorsActive={darkColorsActive}
           />
 
-          <div className="relative" style={{ overflow: "hidden", paddingBottom: cellSize * gridRows, marginBottom: -(cellSize * gridRows) }}>
+          <div className="relative" style={{ overflow: "hidden", paddingTop: cellSize + 8, marginTop: -(cellSize + 8) }}>
             <GameBoard
               grid={grid}
               cols={gridCols}

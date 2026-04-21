@@ -39,10 +39,10 @@ const FlyingTileView = memo(function FlyingTileView({
 
     const landY = targetRow * (cellSize + GAP);
     const left = col * (cellSize + GAP);
-    const offset = boardH + cellSize - landY;
+    // Кубик стартует СВЕРХУ (выше верхнего края доски) и падает вниз на своё место
+    const startOffset = -(landY + cellSize + 8);
     const hex = ITTEN_COLORS[colorId].hex;
 
-    // Все стили — только через DOM, React не трогает этот элемент (нет style в JSX)
     el.style.position = "absolute";
     el.style.left = `${left}px`;
     el.style.top = `${landY}px`;
@@ -52,14 +52,14 @@ const FlyingTileView = memo(function FlyingTileView({
     el.style.borderRadius = "2px";
     el.style.zIndex = "10";
     el.style.pointerEvents = "none";
-    el.style.transform = `translateY(${offset}px)`;
+    el.style.transform = `translateY(${startOffset}px)`;
     el.style.transition = "none";
     el.style.willChange = "transform";
 
     const r1 = requestAnimationFrame(() => {
       const r2 = requestAnimationFrame(() => {
         if (!divRef.current) return;
-        divRef.current.style.transition = "transform 300ms cubic-bezier(0.34,1.2,0.64,1)";
+        divRef.current.style.transition = "transform 300ms cubic-bezier(0.34,1.4,0.64,1)";
         divRef.current.style.transform = "translateY(0px)";
       });
       return () => cancelAnimationFrame(r2);
