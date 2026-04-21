@@ -93,6 +93,10 @@ export const BOARD_H = BOARD_PX;
 
 export const ANIM_DURATION = 400;
 export const STORAGE_KEY = "colorist_scores_v4";
+
+export const POINTS_PAIR   = 2;
+export const POINTS_TRIAD  = 3;
+export const POINTS_TETRAD = 4;
 export const BG = "#2A2A2A";
 export const CELL_EMPTY = "#363636";
 export const CELL_EMPTY_HOVER = "#404040";
