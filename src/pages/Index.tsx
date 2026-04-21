@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import GameBoard from "@/game/GameBoard";
 import { GameOverModal, WinModal } from "@/game/GameOverlay";
@@ -167,14 +167,14 @@ export default function Index() {
           {/* Летящий кубик — рендерится через portal поверх всего, не мешает анимации */}
           {flyingTile && boardRef.current && createPortal(
             <FlyingTilePortal
+              key={flyingTile.progress}
               col={flyingTile.col}
               colorId={flyingTile.colorId}
               targetRow={flyingTile.targetRow}
               cellSize={cellSize}
               boardRect={boardRef.current.getBoundingClientRect()}
             />,
-            document.body,
-            String(flyingTile.progress)
+            document.body
           )}
 
           <a
