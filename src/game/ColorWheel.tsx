@@ -40,7 +40,7 @@ export default function ColorWheel({ litColorIds, activeColorIds, size, darkColo
         const dInner = [
           `M ${x1iI} ${y1iI}`,
           `L ${x1oI} ${y1oI}`,
-          `A ${rMid} ${rMid} 0 0 1 ${x2oI} ${y2oI}`,
+          `L ${x2oI} ${y2oI}`,
           `L ${x2iI} ${y2iI}`,
           `A ${r} ${r} 0 0 0 ${x1iI} ${y1iI}`,
           "Z",
@@ -61,7 +61,7 @@ export default function ColorWheel({ litColorIds, activeColorIds, size, darkColo
           `L ${x1oO} ${y1oO}`,
           `A ${R} ${R} 0 0 1 ${x2oO} ${y2oO}`,
           `L ${x2iO} ${y2iO}`,
-          `A ${rMid} ${rMid} 0 0 0 ${x1iO} ${y1iO}`,
+          `L ${x1iO} ${y1iO}`,
           "Z",
         ].join(" ");
 

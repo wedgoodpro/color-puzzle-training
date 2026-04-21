@@ -3,7 +3,7 @@ import {
   ITTEN_COLORS, COLOR_LEVELS, TRIADS, TETRADS,
   POINTS_PAIR, POINTS_TRIAD, POINTS_TETRAD,
   Cell, Grid, Particle, FlyingTile,
-  getComplement, getTriad, getTriadsForColor, getTetrad, getTetradsForColor,
+  getComplement, getComplementIds, getTriad, getTriadsForColor, getTetrad, getTetradsForColor,
   getActiveColorIds, getActiveColorIdsWithDark, randColorIdFromActive, randFromPool,
   emptyGrid, loadScores, getBestScore, saveScore,
   getGridSize, getCellSize, GAP,
@@ -218,16 +218,16 @@ export function useGameState() {
       if (cells) return { cells, points: cells.length };
     }
 
-    // Пары — прямые соседи комплементарных цветов
+    // Пары — прямые соседи комплементарных цветов (любой вариант: светлый или тёмный)
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         if (!g[row][col]) continue;
         const colorId = g[row][col]!.colorId;
-        const complement = getComplement(colorId);
+        const complements = getComplementIds(colorId);
         const pairCells: [number, number][] = [];
         for (const [dr, dc] of dirs) {
           const nr = row + dr; const nc = col + dc;
-          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && g[nr][nc]?.colorId === complement) {
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && complements.includes(g[nr][nc]?.colorId ?? -1)) {
             pairCells.push([nr, nc]);
           }
         }
@@ -267,13 +267,13 @@ export function useGameState() {
         }
       }
 
-      // Приоритет 3: пара — прямые соседи комплементарного цвета
+      // Приоритет 3: пара — прямые соседи комплементарного цвета (светлый или тёмный вариант)
       if (toRemove.length === 0) {
-        const complement = getComplement(colorId);
+        const complements = getComplementIds(colorId);
         const pairDirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
         for (const [dr, dc] of pairDirs) {
           const nr = row + dr; const nc = col + dc;
-          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && g[nr][nc]?.colorId === complement) {
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && complements.includes(g[nr][nc]?.colorId ?? -1)) {
             if (toRemove.length === 0) toRemove.push([row, col]);
             toRemove.push([nr, nc]);
           }
