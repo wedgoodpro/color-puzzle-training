@@ -21,7 +21,8 @@ interface GameBoardProps {
   getFlyingY: (ft: FlyingTile) => number;
   onColumnClick: (col: number) => void;
   onColumnHover: (col: number | null) => void;
-  onCellClick?: (colorId: number) => void;
+  onCellPress?: (colorId: number) => void;
+  onCellRelease?: () => void;
   boardRef?: React.RefObject<HTMLDivElement>;
 }
 
@@ -89,7 +90,8 @@ export default function GameBoard({
   reviewCells,
   onColumnClick,
   onColumnHover,
-  onCellClick,
+  onCellPress,
+  onCellRelease,
   boardRef,
 }: GameBoardProps) {
   const boardW = boardPx;
@@ -134,7 +136,7 @@ export default function GameBoard({
     <div
       ref={boardRef}
       className="relative overflow-visible"
-      style={{ width: boardW, height: boardH, clipPath: "inset(0 0 -9999px 0)" }}
+      style={{ width: boardW, height: boardH }}
     >
       {/* Фоновые ячейки (zIndex 1) — всегда кликабельны */}
       {Array.from({ length: actualRows }, (_, ri) =>
@@ -195,8 +197,8 @@ export default function GameBoard({
         );
       })}
 
-      {/* Кликабельный слой поверх занятых ячеек (zIndex 4) — для инспекции цвета */}
-      {onCellClick && Array.from({ length: actualRows }, (_, ri) =>
+      {/* Хит-слой поверх занятых ячеек (zIndex 4) — удержание показывает цвет на колесе */}
+      {onCellPress && Array.from({ length: actualRows }, (_, ri) =>
         Array.from({ length: actualCols }, (_, ci) => {
           const colorId = occupiedMap.get(`${ri}-${ci}`);
           if (colorId === undefined) return null;
@@ -205,7 +207,7 @@ export default function GameBoard({
           return (
             <div
               key={`hit-${ri}-${ci}`}
-              className="absolute rounded-sm cursor-pointer"
+              className="absolute rounded-sm"
               style={{
                 left: ci * (cellSize + GAP),
                 top: ri * (cellSize + GAP),
@@ -213,8 +215,13 @@ export default function GameBoard({
                 height: cellSize,
                 zIndex: 4,
                 opacity: 0,
+                cursor: "pointer",
+                touchAction: "none",
               }}
-              onClick={(e) => { e.stopPropagation(); onCellClick(colorId); }}
+              onPointerDown={(e) => { e.stopPropagation(); onCellPress(colorId); }}
+              onPointerUp={(e) => { e.stopPropagation(); onCellRelease?.(); }}
+              onPointerLeave={() => onCellRelease?.()}
+              onPointerCancel={() => onCellRelease?.()}
             />
           );
         })

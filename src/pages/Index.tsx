@@ -48,9 +48,11 @@ export default function Index() {
 
   const [inspectLitIds, setInspectLitIds] = useState<Set<number>>(new Set());
 
-  const handleCellClick = (colorId: number) => {
+  const handleCellPress = (colorId: number) => {
     setInspectLitIds(new Set([colorId]));
-    setTimeout(() => setInspectLitIds(new Set()), 1500);
+  };
+  const handleCellRelease = () => {
+    setInspectLitIds(new Set());
   };
 
   const [copied, setCopied] = useState(false);
@@ -90,7 +92,7 @@ export default function Index() {
             darkColorsActive={darkColorsActive}
           />
 
-          <div className="relative">
+          <div className="relative" style={{ overflow: "hidden", paddingBottom: cellSize * gridRows, marginBottom: -(cellSize * gridRows) }}>
             <GameBoard
               grid={grid}
               cols={gridCols}
@@ -107,7 +109,8 @@ export default function Index() {
               getFlyingY={() => 0}
               onColumnClick={handleColumnClick}
               onColumnHover={setHoverCol}
-              onCellClick={handleCellClick}
+              onCellPress={handleCellPress}
+              onCellRelease={handleCellRelease}
             />
             <NewColorsOverlay notice={newColorsNotice} />
           </div>
