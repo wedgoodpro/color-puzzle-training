@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   BOARD_W, GAP,
   ITTEN_COLORS, CELL_EMPTY, CELL_EMPTY_HOVER,
@@ -25,35 +25,57 @@ interface GameBoardProps {
 }
 
 // Летящий кубик — перемонтируется при каждом броске через key
+// ВАЖНО: все позиционные параметры фиксируются при монтировании через ref,
+// чтобы расширение сетки в середине игры не ломало анимацию.
 function FlyingTileView({
   col, colorId, targetRow, cellSize, boardH, willMatch,
 }: { col: number; colorId: number; targetRow: number; cellSize: number; boardH: number; willMatch: boolean }) {
-  const landY = targetRow * (cellSize + GAP);
-  const startOffset = boardH + cellSize - landY;
+  // Фиксируем параметры при монтировании — они не должны меняться во время полёта
+  const fixedLandY = useRef(targetRow * (cellSize + GAP));
+  const fixedStartOffset = useRef(boardH + cellSize - fixedLandY.current);
+  const fixedLeft = useRef(col * (cellSize + GAP));
+  const fixedCellSize = useRef(cellSize);
+  const divRef = useRef<HTMLDivElement>(null);
   const hex = ITTEN_COLORS[colorId].hex;
-  const animName = `fly-${startOffset}`;
+
+  useEffect(() => {
+    const el = divRef.current;
+    if (!el) return;
+    // Устанавливаем зафиксированные начальные стили напрямую
+    el.style.left = `${fixedLeft.current}px`;
+    el.style.top = `${fixedLandY.current}px`;
+    el.style.width = `${fixedCellSize.current}px`;
+    el.style.height = `${fixedCellSize.current}px`;
+    el.style.transform = `translateY(${fixedStartOffset.current}px)`;
+    el.style.transition = "none";
+
+    const raf1 = requestAnimationFrame(() => {
+      const raf2 = requestAnimationFrame(() => {
+        if (!divRef.current) return;
+        divRef.current.style.transition = "transform 300ms cubic-bezier(0.34,1.2,0.64,1)";
+        divRef.current.style.transform = "translateY(0px)";
+      });
+      return () => cancelAnimationFrame(raf2);
+    });
+    return () => cancelAnimationFrame(raf1);
+  }, []);
 
   return (
-    <>
-      <style>{`
-        @keyframes ${animName} {
-          from { transform: translateY(${startOffset}px); }
-          to   { transform: translateY(0px); }
-        }
-      `}</style>
-      <div
-        className="absolute pointer-events-none rounded-sm"
-        style={{
-          left: col * (cellSize + GAP),
-          top: landY,
-          width: cellSize,
-          height: cellSize,
-          backgroundColor: hex,
-          zIndex: 10,
-          animation: `${animName} 300ms cubic-bezier(0.34,1.2,0.64,1) forwards`,
-        }}
-      />
-    </>
+    <div
+      ref={divRef}
+      className="absolute pointer-events-none rounded-sm"
+      style={{
+        left: fixedLeft.current,
+        top: fixedLandY.current,
+        width: fixedCellSize.current,
+        height: fixedCellSize.current,
+        backgroundColor: hex,
+        zIndex: 10,
+        transform: `translateY(${fixedStartOffset.current}px)`,
+        transition: "none",
+        willChange: "transform",
+      }}
+    />
   );
 }
 
