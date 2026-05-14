@@ -173,9 +173,7 @@ export const getTriad = (id: number): number[] | null => {
 
 export const getTriadsForColor = (id: number): number[][] => {
   const base = getBaseId(id);
-  const baseTriads = TRIADS.filter((t) => t.includes(base));
-  if (!isDark(id)) return baseTriads;
-  return baseTriads.map((t) => t.map((x) => x + 12));
+  return TRIADS.filter((t) => t.includes(base));
 };
 
 export const getTetrad = (id: number): number[] | null => {
@@ -187,9 +185,7 @@ export const getTetrad = (id: number): number[] | null => {
 
 export const getTetradsForColor = (id: number): number[][] => {
   const base = getBaseId(id);
-  const baseTetrads = TETRADS.filter((t) => t.includes(base));
-  if (!isDark(id)) return baseTetrads;
-  return baseTetrads.map((t) => t.map((x) => x + 12));
+  return TETRADS.filter((t) => t.includes(base));
 };
 
 export const getActiveColorIds = (score: number, currentScore?: number): number[] => {

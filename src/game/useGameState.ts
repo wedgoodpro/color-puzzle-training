@@ -8,7 +8,7 @@ import {
   emptyGrid, loadScores, getBestScore, saveScore,
   getGridSize, getCellSize, GAP,
   getBestCombo, saveBestCombo,
-  DARK_COLOR_LEVELS, getActiveDarkIds, isDark, getDarkId,
+  DARK_COLOR_LEVELS, getActiveDarkIds, isDark, getDarkId, getBaseId,
 } from "@/game/constants";
 
 export function useGameState() {
@@ -130,14 +130,14 @@ export function useGameState() {
   };
 
   // Проверяет что набор ячеек образует связную цепочку (каждая соседствует хотя бы с одной другой)
-  // и каждый цвет из группы присутствует ровно один раз (без повторов)
-  const isValidChain = (cells: [number, number][], g: Grid, groupColorIds: number[]): boolean => {
-    if (cells.length !== groupColorIds.length) return false;
-    // Все цвета уникальны и совпадают с группой
-    const cellColors = cells.map(([r, c]) => g[r][c]!.colorId);
-    const colorSet = new Set(cellColors);
-    if (colorSet.size !== groupColorIds.length) return false;
-    for (const id of groupColorIds) if (!colorSet.has(id)) return false;
+  // и каждый baseId из группы присутствует ровно один раз (оттенки не важны)
+  const isValidChain = (cells: [number, number][], g: Grid, groupBaseIds: number[]): boolean => {
+    if (cells.length !== groupBaseIds.length) return false;
+    // Все baseId уникальны и совпадают с группой
+    const cellBases = cells.map(([r, c]) => getBaseId(g[r][c]!.colorId));
+    const baseSet = new Set(cellBases);
+    if (baseSet.size !== groupBaseIds.length) return false;
+    for (const id of groupBaseIds) if (!baseSet.has(id)) return false;
     // Связность: граф из ячеек — все достижимы друг из друга через соседство
     const cellSet = new Set(cells.map(([r, c]) => `${r}-${c}`));
     const visited = new Set<string>();
@@ -157,35 +157,38 @@ export function useGameState() {
     return visited.size === cells.length;
   };
 
-  // Ищет группу ячеек на поле: по одной ячейке каждого цвета из groupIds,
-  // соседних друг с другом (цепочка без повторов цвета)
-  const findGroupOnBoard = (g: Grid, rows: number, cols: number, groupIds: number[]): [number, number][] | null => {
-    const groupSet = new Set(groupIds);
+  // Ищет группу ячеек на поле: по одной ячейке каждого baseId из groupBaseIds,
+  // соседних друг с другом (цепочка без повторов baseId, оттенки взаимозаменяемы)
+  const findGroupOnBoard = (g: Grid, rows: number, cols: number, groupBaseIds: number[]): [number, number][] | null => {
+    const groupSet = new Set(groupBaseIds);
 
-    // Собираем все ячейки каждого цвета группы
-    const byColor = new Map<number, [number, number][]>();
-    for (const id of groupIds) byColor.set(id, []);
+    // Собираем все ячейки каждого baseId группы (любой оттенок подходит)
+    const byBase = new Map<number, [number, number][]>();
+    for (const id of groupBaseIds) byBase.set(id, []);
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const cell = g[r][c];
-        if (cell && groupSet.has(cell.colorId)) {
-          byColor.get(cell.colorId)!.push([r, c]);
+        if (cell) {
+          const base = getBaseId(cell.colorId);
+          if (groupSet.has(base)) {
+            byBase.get(base)!.push([r, c]);
+          }
         }
       }
     }
-    // Если хотя бы одного цвета нет — группы нет
-    for (const id of groupIds) if (byColor.get(id)!.length === 0) return null;
+    // Если хотя бы одного baseId нет — группы нет
+    for (const id of groupBaseIds) if (byBase.get(id)!.length === 0) return null;
 
-    // Перебираем все комбинации (по одной ячейке каждого цвета) через DFS
-    const result: [number, number][] = new Array(groupIds.length);
+    // Перебираем все комбинации (по одной ячейке каждого baseId) через DFS
+    const result: [number, number][] = new Array(groupBaseIds.length);
     const usedCells = new Set<string>();
 
     const dfs = (idx: number): boolean => {
-      if (idx === groupIds.length) {
-        return isValidChain(result, g, groupIds);
+      if (idx === groupBaseIds.length) {
+        return isValidChain(result, g, groupBaseIds);
       }
-      const colorId = groupIds[idx];
-      for (const [r, c] of byColor.get(colorId)!) {
+      const baseId = groupBaseIds[idx];
+      for (const [r, c] of byBase.get(baseId)!) {
         const key = `${r}-${c}`;
         if (usedCells.has(key)) continue;
         result[idx] = [r, c];
@@ -485,11 +488,11 @@ export function useGameState() {
           if (cells?.some(([r, c]) => r === newRow && c === col))
             return { colors: new Set(cells.map(([r, c]) => previewGrid[r][c]!.colorId)), isPair: false, cells: null };
         }
-        const complement = getComplement(colorId);
+        const complements = getComplementIds(colorId);
         for (const [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1]] as [number,number][]) {
           const nr = newRow + dr; const nc = col + dc;
-          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && previewGrid[nr][nc]?.colorId === complement)
-            return { colors: new Set([colorId, complement]), isPair: true, cells: [[newRow, col], [nr, nc]] as [number,number][] };
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && complements.includes(previewGrid[nr][nc]?.colorId ?? -1))
+            return { colors: new Set([colorId, previewGrid[nr][nc]!.colorId]), isPair: true, cells: [[newRow, col], [nr, nc]] as [number,number][] };
         }
         return null;
       })();
